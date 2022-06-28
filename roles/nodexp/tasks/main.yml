@@ -1,0 +1,36 @@
+- name: Create node_exporter TLS dir
+  file:
+    path: "{{ nodexp_remote_tls_path }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "u=rwx,g=rwx,o=rx"
+
+- name: Transfer TLS files to remote
+  copy:
+    src: "{{ item }}"
+    dest: "{{ nodexp_remote_tls_path }}"
+    owner: root
+    group: root
+    mode: "u=rw,g=rw,o=r"
+    force: yes
+  with_items:
+    - "{{ nodexp_local_tls_path }}/server.cert"
+    - "{{ nodexp_local_tls_path }}/server.csr"
+    - "{{ nodexp_local_tls_path }}/server.key"
+
+- name: Install unzip
+  package:
+    pkg: "{{ item }}"
+    state: present
+  with_items:
+    - unzip
+
+- import_role:
+    name: cloudalchemy.node_exporter
+  vars:
+    node_exporter_tls_server_config:
+      cert_file: "{{ nodexp_remote_tls_path }}/server.cert"
+      key_file: "{{ nodexp_remote_tls_path }}/server.key"
+    node_exporter_basic_auth_users:
+      prometheus: "{{ nodexp_password }}"

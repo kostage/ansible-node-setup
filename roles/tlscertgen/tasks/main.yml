@@ -1,0 +1,44 @@
+- name: Check if cert already exists
+  stat:
+    path: "{{ tlscertgen_dir }}/server.cert"
+  register: tlscertgen_cert_check
+
+- name: Check if CSR already exists
+  stat:
+    path: "{{ tlscertgen_dir }}/server.csr"
+  register: tlscertgen_csr_check
+
+- name: Check if key already exists
+  stat:
+    path: "{{ tlscertgen_dir }}/server.key"
+  register: tlscertgen_key_check
+
+- name: Create cert dir
+  file:
+    path: "{{ tlscertgen_dir }}"
+    state: directory
+    # mode: "u=rw,g=rw,o=r"
+  when: not tlscertgen_cert_check.stat.exists and not tlscertgen_csr_check.stat.exists and not tlscertgen_key_check.stat.exists
+
+- name: Create server private key
+  openssl_privatekey:
+    path: "{{ tlscertgen_dir }}/server.key"
+    size: 2048
+    # mode: "u=rw,g=rw,o=r"
+  when: not tlscertgen_cert_check.stat.exists and not tlscertgen_csr_check.stat.exists and not tlscertgen_key_check.stat.exists
+
+- name: Create server CSR
+  openssl_csr:
+    path: "{{ tlscertgen_dir }}/server.csr"
+    privatekey_path: "{{ tlscertgen_dir }}/server.key"
+    # mode: "u=rw,g=rw,o=r"
+  when: not tlscertgen_cert_check.stat.exists and not tlscertgen_csr_check.stat.exists and not tlscertgen_key_check.stat.exists
+
+- name: Create cert and key
+  openssl_certificate:
+    path: "{{ tlscertgen_dir }}/server.cert"
+    csr_path: "{{ tlscertgen_dir }}/server.csr"
+    privatekey_path: "{{ tlscertgen_dir }}/server.key"
+    provider: selfsigned
+    # mode: "u=rw,g=r,o=r"
+  when: not tlscertgen_cert_check.stat.exists and not tlscertgen_csr_check.stat.exists and not tlscertgen_key_check.stat.exists

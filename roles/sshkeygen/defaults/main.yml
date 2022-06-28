@@ -1,0 +1,2 @@
+sshkeygen_keypass: ""
+sshkeygen_directory: "~/.ssh/ansible"

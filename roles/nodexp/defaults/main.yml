@@ -1,0 +1,2 @@
+nodexp_remote_tls_path: "/etc/node_exporter"
+nodexp_local_tls_path: "~/node_exporter_tls"

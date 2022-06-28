@@ -1,0 +1,21 @@
+---
+- name: Create {{ username }} With Password
+  ansible.builtin.user:
+    name: "{{ username }}"
+    password: "{{ password }}"
+    groups: "sudo"
+    append: yes
+    state: present
+    shell: /bin/bash
+    update_password: on_create
+
+- name: Set authorized key took from file
+  authorized_key:
+    user: "{{ username }}"
+    state: present
+    key: "{{ lookup('file', '{{ local_ssh_key_dir }}/{{ username }}_validator_id_rsa.pub') }}"
+
+- name: Stop and Start ssh
+  service:
+    name: ssh
+    state: restarted

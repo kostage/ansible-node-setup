@@ -1,0 +1,12 @@
+
+# now switch SSH to alternate port
+- hosts: hetzner_test
+  remote_user: "{{ user.name }}"
+  become: yes
+  tasks:
+    - import_role:
+        name: ssh
+      vars:
+        sshd_options:
+          - option: Port
+            value: "{{ ssh_port }}"

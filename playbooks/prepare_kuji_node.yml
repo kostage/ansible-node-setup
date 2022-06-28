@@ -1,0 +1,70 @@
+- name: Generate SSH key
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: sshkeygen
+      vars:
+        sshkeygen_username: "{{ user.name }}"
+        sshkeygen_directory: "{{ kujimn_local_ssh_key_dir }}"
+
+- hosts: kuji_mainnet
+  remote_user: root
+  tasks:
+  - import_role:
+      name: user
+    vars:
+      username: "{{ user.name }}"
+      password: "{{ ansible_become_pass | password_hash('sha512') }}"
+      local_ssh_key_dir: "{{ kujimn_local_ssh_key_dir }}"
+  ignore_errors: yes
+  ignore_unreachable: yes
+
+- hosts: kuji_mainnet
+  remote_user: "{{ user.name }}"
+  become: yes
+  tasks:
+    - import_role:
+        name: apt
+    - import_role:
+        name: ssh
+      vars:
+        username: "{{ user.name }}"
+    - import_role:
+        name: gantsign.golang
+    - import_role:
+        name: firewall # also allow non-standard SSH port
+
+- name: Generate TLS cert
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: tlscertgen
+      vars:
+        tlscertgen_dir: "{{ kujimn_local_node_exporter_tls_cert_dir }}"
+
+- hosts: kuji_mainnet
+  remote_user: "{{ user.name }}"
+  become: yes
+  # vars_prompt:
+  #   - name: node_exporter_password
+  #     prompt: "Enter your node_exporter password"
+  tasks:
+    - import_role:
+        name: nodexp
+      vars:
+        nodexp_local_tls_path: "{{ kujimn_local_node_exporter_tls_cert_dir }}"
+        nodexp_password: "{{ ansible_become_pass }}"
+
+#  now switch SSH to alternate port
+- hosts: kuji_mainnet
+  remote_user: "{{ user.name }}"
+  become: yes
+  tasks:
+    - import_role:
+        name: ssh
+      vars:
+        sshd_options:
+          - option: Port
+            value: "{{ ssh_port }}"

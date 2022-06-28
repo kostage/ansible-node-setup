@@ -1,0 +1,10 @@
+- name: Comment out all "{{ ssh_option }}" lines
+  replace:
+    dest: "{{ sshd_config }}"
+    regexp: '(^\s*{{ ssh_option }}.*$)'
+    replace: '# \1'
+- name: Set "{{ ssh_option }} to '{{ ssh_value }}'"
+  lineinfile:
+    dest: "{{ sshd_config }}"
+    line: "{{ ssh_option }} {{ ssh_value }}"
+    state: present

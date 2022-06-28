@@ -1,0 +1,11 @@
+- include_tasks: set_option.yml 
+  vars:
+    ssh_option: "{{ item.option }}"
+    ssh_value: "{{ item.value }}"
+  loop:
+    "{{ sshd_options }}"
+
+- name: Stop and Start ssh
+  service:
+    name: ssh
+    state: restarted

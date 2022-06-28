@@ -1,0 +1,21 @@
+- name: Generate TLS cert
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: tlscertgen
+      vars:
+        tlscertgen_dir: "{{ local_node_exporter_tls_cert_dir }}"
+
+- hosts: hetzner_test
+  remote_user: "{{ user.name }}"
+  become: yes
+  vars_prompt:
+    - name: node_exporter_password
+      prompt: "Enter your node_exporter password"
+  tasks:
+    - import_role:
+        name: nodexp
+      vars:
+        nodexp_local_tls_path: "{{ local_node_exporter_tls_cert_dir }}"
+        nodexp_password: "{{ node_exporter_password }}"
