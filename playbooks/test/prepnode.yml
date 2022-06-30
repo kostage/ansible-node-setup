@@ -1,33 +1,71 @@
-# - hosts: hetzner_test
-#   remote_user: root
-#   tasks:
-#   - import_role:
-#       name: user
-#     vars:
-#       username: "{{ user.name }}"
-#       password: "{{ ansible_become_pass | password_hash('sha512') }}"
-#   ignore_errors: yes
-#   ignore_unreachable: yes
+- hosts: hetzner_test
+  name: Create user with password and ssh key
+  remote_user: root
+  tasks:
+    - import_role:
+        name: user
+      vars:
+        user_name: "{{ test.username }}"
+        user_password: "{{ ansible_become_pass | password_hash('sha512') }}"
+        user_ssh_key_save_path: "{{ test.sshkey_path }}"
+  ignore_errors: yes
+  ignore_unreachable: yes
 
-- name: Generate SSH key
+- name: Evaluating the authentication agent & adding the key...
   hosts: localhost
   connection: local
   tasks:
     - import_role:
-        name: sshkeygen
+        name: sshadd
       vars:
-        sshkeygen_username: "{{ user.name }}"
-        sshkeygen_directory: "/Users/kostage/.ssh/ansible_test"
+        sshadd_key_path:  "{{ test.sshkey_path }}/{{ test.username }}_id_rsa"
 
-- hosts: hetzner_test
-  remote_user: "{{ user.name }}"
+- name: Tune SSH, install packages, golang, set FW
+  hosts: hetzner_test
+  remote_user: "{{ test.username }}"
   become: yes
   tasks:
-    # - import_role:
-    #     name: apt
+    - import_role:
+        name: apt
     - import_role:
         name: ssh
       vars:
-        username: "{{ user.name }}"
-    # - import_role:
-    #     name: firewall # also allow non-standard SSH port
+        username: "{{ test.username }}"
+    - import_role:
+        name: gantsign.golang
+    - import_role:
+        name: firewall # also allow non-standard SSH port
+
+- name: Generate TLS cert
+  hosts: hetzner_test
+  remote_user: "{{ test.username }}"
+  tasks:
+    - import_role:
+        name: tlsgen
+      vars:
+        tlsgen_path: "{{ test.nodexp_tls_path }}"
+
+- hosts: hetzner_test
+  remote_user: "{{ test.username }}"
+  become: yes
+  # vars_prompt:
+  #   - name: node_exporter_password
+  #     prompt: "Enter your node_exporter password"
+  tasks:
+    - import_role:
+        name: nodexp
+      vars:
+        nodexp_local_tls_path: "{{ test.nodexp_tls_path }}"
+        nodexp_password: "{{ ansible_become_pass }}"
+
+#  now switch SSH to alternate port
+- hosts: hetzner_test
+  remote_user: "{{ test.username }}"
+  become: yes
+  tasks:
+    - import_role:
+        name: ssh
+      vars:
+        sshd_options:
+          - option: Port
+            value: "{{ ssh_port }}"

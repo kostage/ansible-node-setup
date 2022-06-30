@@ -1,0 +1,28 @@
+- name: Create cert dir
+  file:
+    path: "{{ tlsgen_tmp_dir }}"
+    state: directory
+
+- name: Create server private key
+  openssl_privatekey:
+    path: "{{ tlsgen_tmp_dir }}/server.key"
+    size: 2048
+
+- name: Create server CSR
+  openssl_csr:
+    path: "{{ tlsgen_tmp_dir }}/server.csr"
+    privatekey_path: "{{ tlsgen_tmp_dir }}/server.key"
+
+- name: Create cert and key
+  openssl_certificate:
+    path: "{{ tlsgen_tmp_dir }}/server.cert"
+    csr_path: "{{ tlsgen_tmp_dir }}/server.csr"
+    privatekey_path: "{{ tlsgen_tmp_dir }}/server.key"
+    provider: selfsigned
+
+- name: Copy TLS files to local machine
+  ansible.posix.synchronize:
+    mode: pull
+    checksum: yes
+    src: "{{ tlsgen_tmp_dir }}/"
+    dest: "{{ tlsgen_path }}/"

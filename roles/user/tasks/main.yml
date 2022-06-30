@@ -1,19 +1,28 @@
 ---
-- name: Create {{ username }} With Password
+- name: Create {{ user_name }} With Password
   ansible.builtin.user:
-    name: "{{ username }}"
-    password: "{{ password }}"
+    name: "{{ user_name }}"
+    password: "{{ user_password }}"
+    generate_ssh_key: yes
+    ssh_key_file: ".ssh/{{ user_name }}_id_rsa"
     groups: "sudo"
     append: yes
     state: present
     shell: /bin/bash
-    update_password: on_create
+    update_password: always
 
-- name: Set authorized key took from file
-  authorized_key:
-    user: "{{ username }}"
+- name: Copy keys to local machine
+  ansible.posix.synchronize:
+    mode: pull
+    checksum: yes
+    src: "/home/{{ user_name }}/.ssh/"
+    dest: "{{ user_ssh_key_save_path }}/"
+
+- name: Deploy SSH Public Key
+  ansible.posix.authorized_key:
+    user: "{{ user_name }}"
     state: present
-    key: "{{ lookup('file', '{{ local_ssh_key_dir }}/{{ username }}_validator_id_rsa.pub') }}"
+    key: "{{ lookup('file', '{{ user_ssh_key_save_path }}/{{ user_name }}_id_rsa.pub') }}"
 
 - name: Stop and Start ssh
   service:

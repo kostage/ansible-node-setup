@@ -1,0 +1,3 @@
+- name: Evaluating the authentication agent & adding the key...
+  shell: |
+    ssh-add "{{ sshadd_key_path }}"
