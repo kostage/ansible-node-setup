@@ -1,3 +1,4 @@
 - name: Evaluating the authentication agent & adding the key...
   shell: |
+    eval `ssh-agent -s`
     ssh-add "{{ sshadd_key_path }}"
