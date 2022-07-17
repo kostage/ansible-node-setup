@@ -1,0 +1,4 @@
+- import_role:
+    name: cloudalchemy.prometheus
+  vars:
+    prometheus_scrape_configs: "{{ lookup('ansible.builtin.template', 'scrape_configs.j2') | from_yaml }}"

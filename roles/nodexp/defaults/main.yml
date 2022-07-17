@@ -1,2 +1,9 @@
-nodexp_remote_tls_path: "/etc/node_exporter"
-nodexp_local_tls_path: "~/node_exporter_tls"
+
+nodexp_tls: yes
+nodexp_config:
+  security:
+    path: '/etc/node_exporter'
+    localpath: 'undefined'
+    cert_file: 'server.crt'
+    key_file: 'server.key'
+    password: 'undefined'

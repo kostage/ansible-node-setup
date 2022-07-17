@@ -1,7 +1,7 @@
 ---
 # Sets the amount of time the cache is valid (1h)
 cache_valid_time: 3600
-packages:
+apt_packages:
   - sudo
   - wget
   - curl
@@ -16,3 +16,4 @@ packages:
   - bc
   - unzip
   - tar
+  - ca-certificates

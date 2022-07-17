@@ -1,0 +1,31 @@
+---
+- block:
+    - name: Download cosmos_exporter binary
+      become: false
+      ansible.builtin.get_url:
+        url: 'https://github.com/kostage/cosmos-exporter/releases/download/v{{ cosmosexp_version }}/cosmos-exporter_{{ cosmosexp_version }}_linux_{{ cosmosexp_go_arch }}.tar.gz'
+        dest: '/tmp/cosmos-exporter_{{ cosmosexp_version }}_linux_{{ cosmosexp_go_arch }}.tar.gz'
+        checksum: 'sha256:{{ cosmosexp_checksum }}'
+        mode: '0644'
+      register: _download_binary
+      until: _download_binary is succeeded
+      retries: 5
+      delay: 2
+
+    - name: Unpack cosmos_exporter binary
+      become: false
+      unarchive:
+        remote_src: yes
+        src: '/tmp/cosmos-exporter_{{ cosmosexp_version }}_linux_{{ cosmosexp_go_arch }}.tar.gz'
+        dest: '/tmp'
+
+    - name: Propagate cosmos_exporter binaries
+      copy:
+        remote_src: yes
+        src: '/tmp/cosmos-exporter'
+        dest: '{{ _cosmosexp_binary_install_dir }}/cosmos_exporter'
+        mode: 0755
+        owner: root
+        group: root
+      notify: restart cosmos_exporter
+      when: not ansible_check_mode

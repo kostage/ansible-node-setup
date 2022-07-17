@@ -1,0 +1,19 @@
+---
+- import_tasks: preflight.yml
+  become: no
+
+- import_tasks: install.yml
+  become: true
+
+- import_tasks: configure.yml
+  become: true
+
+- name: Ensure Cosmos Exporter is enabled on boot
+  become: true
+  systemd:
+    daemon_reload: true
+    name: cosmos_exporter
+    enabled: true
+    state: started
+  when:
+    - not ansible_check_mode

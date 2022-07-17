@@ -1,0 +1,28 @@
+---
+- name: Copy the cosmos_exporter systemd service file
+  template:
+    src: cosmos_exporter.service.j2
+    dest: /etc/systemd/system/cosmos_exporter.service
+    owner: root
+    group: root
+    mode: 0644
+  notify: restart cosmos_exporter
+
+- block:
+    - name: Create cosmos_exporter config directory
+      file:
+        path: "{{ cosmosexp_security_config.tls_path }}"
+        state: directory
+        owner: root
+        group: root
+        mode: u+rwX,g+rwX,o=rX
+
+    - name: Copy the cosmos_exporter config file
+      template:
+        src: config.yaml.j2
+        dest: "{{ cosmosexp_security_config.tls_path }}/config.yaml"
+        owner: root
+        group: root
+        mode: 0644
+      notify: restart cosmos_exporter
+  when: cosmosexp_security_config is defined

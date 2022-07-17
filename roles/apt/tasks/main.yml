@@ -9,4 +9,4 @@
     pkg: '{{ item }}'
     state: present
   with_items:
-  - "{{ packages }}"
+  - "{{ apt_packages }}"

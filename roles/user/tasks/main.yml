@@ -4,7 +4,7 @@
     name: "{{ user_name }}"
     password: "{{ user_password }}"
     generate_ssh_key: yes
-    ssh_key_file: ".ssh/{{ user_name }}_id_rsa"
+    ssh_key_file: "{{ user_ssh_key_file }}"
     groups: "sudo"
     append: yes
     state: present

@@ -1,28 +1,52 @@
-- name: Create cert dir
-  file:
-    path: "{{ tlsgen_tmp_dir }}"
-    state: directory
+- name: Create private key with password protection
+  community.crypto.openssl_privatekey:
+    path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
+    passphrase: "{{ tlsgen_ca_secret_passphrase }}"
+    cipher: auto
+  when: tlsgen_ca_create
 
-- name: Create server private key
-  openssl_privatekey:
-    path: "{{ tlsgen_tmp_dir }}/server.key"
-    size: 2048
+- name: Create certificate signing request (CSR) for CA certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
+    privatekey_passphrase: "{{ tlsgen_ca_secret_passphrase }}"
+    common_name: "{{ tlsgen_ca_common_name }}"
+    use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
+    basic_constraints:
+      - 'CA:TRUE'
+    basic_constraints_critical: yes
+    key_usage:
+      - keyCertSign
+    key_usage_critical: true
+  register: tlsgen_ca_csr
+  when: tlsgen_ca_create
 
-- name: Create server CSR
-  openssl_csr:
-    path: "{{ tlsgen_tmp_dir }}/server.csr"
-    privatekey_path: "{{ tlsgen_tmp_dir }}/server.key"
-
-- name: Create cert and key
-  openssl_certificate:
-    path: "{{ tlsgen_tmp_dir }}/server.cert"
-    csr_path: "{{ tlsgen_tmp_dir }}/server.csr"
-    privatekey_path: "{{ tlsgen_tmp_dir }}/server.key"
+- name: Create self-signed CA certificate from CSR
+  community.crypto.x509_certificate:
+    csr_content: "{{ tlsgen_ca_csr.csr }}"
+    path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_cert_name }}"
+    privatekey_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
+    privatekey_passphrase: "{{ tlsgen_ca_secret_passphrase }}"
     provider: selfsigned
+  when: tlsgen_ca_create
 
-- name: Copy TLS files to local machine
-  ansible.posix.synchronize:
-    mode: pull
-    checksum: yes
-    src: "{{ tlsgen_tmp_dir }}/"
-    dest: "{{ tlsgen_path }}/"
+- name: Create private key for new certificate for server
+  community.crypto.openssl_privatekey:
+    path: "{{ tlsgen_path }}/{{ tlsgen_key_name }}"
+
+- name: Create certificate signing request (CSR) for new certificate
+  community.crypto.openssl_csr_pipe:
+    privatekey_path: "{{ tlsgen_path }}/{{ tlsgen_key_name }}"
+    common_name: "{{ tlsgen_common_name }}"
+    subject_alt_name: "{{ tlsgen_sans }}"
+  register: tlsgen_csr
+
+- name: Sign certificate with our CA
+  community.crypto.x509_certificate:
+    csr_content: "{{ tlsgen_csr.csr }}"
+    provider: ownca
+    path: "{{ tlsgen_path }}/{{ tlsgen_cert_name }}"
+    ownca_not_after: "{{ tlsgen_not_after }}"
+    ownca_not_before: "{{ tlsgen_not_before }}"
+    ownca_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_cert_name }}"
+    ownca_privatekey_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
+    ownca_privatekey_passphrase: "{{ tlsgen_ca_secret_passphrase }}"

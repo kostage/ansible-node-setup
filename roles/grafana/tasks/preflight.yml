@@ -1,0 +1,24 @@
+---
+- block:
+    - name: Assert that TLS key and cert path are set
+      assert:
+        that:
+          - "grafana_security_config.cert_file is defined"
+          - "grafana_security_config.key_file is defined"
+
+    - name: Check existence of TLS cert file
+      stat:
+        path: "{{ grafana_security_config.tls_path }}/{{ grafana_security_config.cert_file }}"
+      register: __grafana_cert_file
+
+    - name: Check existence of TLS key file
+      stat:
+        path: "{{ grafana_security_config.tls_path }}/{{ grafana_security_config.key_file }}"
+      register: __grafana_key_file
+
+    - name: Assert that TLS key and cert are present
+      assert:
+        that:
+          - "{{ __grafana_cert_file.stat.exists }}"
+          - "{{ __grafana_key_file.stat.exists }}"
+  when: grafana_security_config is defined

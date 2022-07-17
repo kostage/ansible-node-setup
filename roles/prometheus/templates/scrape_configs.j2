@@ -1,0 +1,60 @@
+- job_name: 'self_monitor'
+  metrics_path: /metrics
+  static_configs:
+    - targets:
+      - 'localhost:9100'
+      labels:
+        env: 'self_monitor'
+
+{% for node in prometheus_nodes %}
+- job_name: '{{ node.name }}'
+  metrics_path: /metrics
+  scheme: https
+  static_configs:
+    - targets:
+      - '{{ node.ip }}:9100'
+      labels:
+        env: '{{ node.name }}'
+  basic_auth:
+    username: '{{ prometheus_username }}'
+    password: '{{ node.password }}'
+{% endfor %}
+
+# Cosmos specific validator(s)
+{% for validator in prometheus_cosmos_validators %}
+- job_name: '{{ validator.name }}_validator'
+  scrape_interval: 15s
+  metrics_path: /metrics/validator
+  scheme: https
+  static_configs:
+    - targets:
+      - '{{ validator.valoper }}'
+  basic_auth:
+    username: '{{ prometheus_username }}'
+    password: '{{ validator.password }}'
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_address
+    - source_labels: [__param_address]
+      target_label: instance
+    - target_label: __address__
+      replacement: '{{ validator.ip }}:9300'
+
+- job_name: '{{ validator.name }}_wallet'
+  scrape_interval: 15s
+  metrics_path: /metrics/wallet
+  scheme: https
+  static_configs:
+    - targets:
+      - '{{ validator.wallet }}'
+  basic_auth:
+    username: '{{ prometheus_username }}'
+    password: '{{ validator.password }}'
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_address
+    - source_labels: [__param_address]
+      target_label: instance
+    - target_label: __address__
+      replacement: '{{ validator.ip }}:9300'
+{% endfor %}

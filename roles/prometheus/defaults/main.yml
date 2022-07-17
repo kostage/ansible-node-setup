@@ -1,0 +1,3 @@
+prometheus_nodes: {}
+prometheus_cosmos_validators: {}
+prometheus_username: 'prometheus'

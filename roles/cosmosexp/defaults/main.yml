@@ -1,0 +1,10 @@
+---
+cosmosexp_tls_server_config: {}
+cosmosexp_http_server_config: {}
+cosmosexp_basic_auth_users: {}
+cosmosexp_config_path: '/etc/cosmos_exporter'
+cosmosexp_go_arch: 'amd64'
+cosmosexp_version: '0.3.6'
+
+# Internal variables.
+_cosmosexp_binary_install_dir: '/usr/local/bin'

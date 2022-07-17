@@ -1,0 +1,13 @@
+- import_tasks: preflight.yml
+  become: no
+
+- import_role:
+    name: cloudalchemy.grafana
+  vars:
+    grafana_security:
+      admin_user: "{{ grafana_security_config.username }}"
+      admin_password: "{{ grafana_security_config.password }}"
+    grafana_server:
+      protocol: https
+      cert_file: "{{ grafana_security_config.tls_path }}/{{ grafana_security_config.cert_file }}"
+      cert_key: "{{ grafana_security_config.tls_path }}/{{ grafana_security_config.key_file }}"

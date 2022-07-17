@@ -1,1 +1,6 @@
-tlsgen_tmp_dir: "/tmp/tlsgen"
+tlsgen_ca_common_name: "Konstantin Doroshenko CA"
+tlsgen_ca_root_cert_name: ca_root.crt
+tlsgen_ca_root_key_name: ca_root.key
+tlsgen_ca_create: no
+tlsgen_not_after: +999d  # valid for one year
+tlsgen_not_before: "-1d"  # valid since yesterday

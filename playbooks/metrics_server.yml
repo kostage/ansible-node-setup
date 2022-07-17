@@ -1,0 +1,107 @@
+- hosts: hetzner_test
+  name: Create user with password and ssh key
+  remote_user: root
+  tasks:
+    - import_role:
+        name: user
+      vars:
+        user_name: '{{ metrics_server.username }}'
+        user_password: "{{ ansible_become_pass | password_hash('sha512') }}"
+        user_ssh_key_save_path: '{{ metrics_server.sshkey_save_path }}'
+        user_ssh_key_file: '.ssh/{{ metrics_server.username }}_id_rsa'
+  ignore_errors: yes
+  ignore_unreachable: yes
+
+- name: Evaluating the authentication agent & adding the key...
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: sshadd
+      vars:
+        sshadd_key_path:  '{{ metrics_server.sshkey_save_path }}/{{ metrics_server.username }}_id_rsa'
+
+- name: Tune SSH, install packages, golang, set FW
+  hosts: hetzner_test
+  remote_user: '{{ metrics_server.username }}'
+  become: yes
+  tasks:
+    - import_role:
+        name: apt
+    - import_role:
+        name: ssh
+      vars:
+        username: '{{ metrics_server.username }}'
+    - import_role:
+        name: gantsign.golang
+      vars:
+        golang_gopath: '/home/{{ metrics_server.username }}/go'
+    - import_role:
+        name: firewall
+      vars:
+        firewall_rules:
+        - rule: allow
+          port: 3000
+
+- hosts: hetzner_test
+  remote_user: '{{ metrics_server.username }}'
+  become: yes
+  tasks:
+    - import_role:
+        name: nodexp
+      vars:
+        nodexp_tls: no
+
+- name: Install root cert to allow prometheus scrape nodes
+  hosts: hetzner_test
+  remote_user: '{{ metrics_server.username }}'
+  become: yes
+  tasks:
+    - copy:
+        src: '{{ ca.prometheus.root_path }}/{{ ca.prometheus.root_cert_name }}'
+        dest: '{{ metrics_server.cert_trust_store }}'
+        owner: root
+        group: root
+        mode: 'u=rw,g=r,o=r'
+        force: yes
+    - ansible.builtin.shell: update-ca-certificates
+
+- name: Transfer TLS files to remote
+  hosts: hetzner_test
+  remote_user: '{{ metrics_server.username }}'
+  tasks:
+    - copy:
+        src: "{{ item }}"
+        dest: "{{ metrics_server.tls_remote_path }}"
+        owner: root
+        group: root
+        mode: "u=rw,g=rw,o=r"
+        force: yes
+      with_items:
+        - "{{ metrics_server.tls_local_path }}/{{ metrics_server.tls_cert_name }}"
+        - "{{ metrics_server.tls_local_path }}/{{ metrics_server.tls_key_name }}"
+
+- name: Install prometheus
+  hosts: hetzner_test
+  remote_user: '{{ metrics_server.username }}'
+  tasks:
+    - import_role:
+        name: prometheus
+      vars:
+        prometheus_nodes: '{{ metrics_server.prometheus.nodes }}'
+        prometheus_cosmos_validators: '{{ metrics_server.prometheus.cosmos_validators }}'
+
+- name: Install grafana
+  hosts: hetzner_test
+  remote_user: '{{ metrics_server.username }}'
+  become: yes
+  tasks:
+    - import_role:
+        name: grafana
+      vars:
+        grafana_security_config:
+          tls_path: '{{ metrics_server.tls_remote_path }}'
+          cert_file: '{{ metrics_server.tls_cert_name }}'
+          key_file: '{{ metrics_server.tls_key_name }}'
+          username: '{{ metrics_server.username }}'
+          password: '{{ ansible_become_pass }}'
