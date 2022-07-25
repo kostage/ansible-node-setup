@@ -5,14 +5,6 @@
   loop:
     "{{ sshd_options }}"
 
-- include_tasks: set_option.yml 
-  vars:
-    ssh_option: "{{ item.option }}"
-    ssh_value: "{{ item.value }}"
-  loop:
-    "{{ sshd_extra_options }}"
-  when: sshd_extra_options is defined
-
 - name: Stop and Start ssh
   service:
     name: ssh

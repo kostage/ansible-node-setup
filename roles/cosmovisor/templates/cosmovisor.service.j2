@@ -1,0 +1,20 @@
+{{ ansible_managed | comment }}
+
+[Unit]
+Description=cosmovisor
+After=network-online.target
+
+[Service]
+User={{ cosmovisor_user }}
+ExecStart=/home/{{ cosmovisor_user }}/go/bin/cosmovisor start
+Restart=always
+RestartSec=3
+LimitNOFILE=4096
+Environment="DAEMON_NAME={{ cosmovisor_daemon_name }}"
+Environment="DAEMON_HOME={{ cosmovisor_daemon_home }}"
+Environment="DAEMON_ALLOW_DOWNLOAD_BINARIES=false"
+Environment="DAEMON_RESTART_AFTER_UPGRADE=true"
+Environment="DAEMON_LOG_BUFFER_SIZE=512"
+
+[Install]
+WantedBy=multi-user.target

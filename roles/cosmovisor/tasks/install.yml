@@ -1,0 +1,58 @@
+---
+- name: Create cosmovisor directories
+  become: false
+  file:
+    path: '{{ item }}'
+    state: directory
+    owner: '{{ cosmovisor_user }}'
+    group: '{{ cosmovisor_user }}'
+    mode: u+rwX,g+rwX,o=rX
+  with_items:
+    - '{{ cosmovisor_daemon_home }}/cosmovisor/genesis/bin'
+    - '{{ cosmovisor_daemon_home }}/cosmovisor/upgrades'
+    - '/tmp/cosmos-sdk'
+
+- name: Download cosmovisor binary
+  become: false
+  ansible.builtin.get_url:
+    url: 'https://github.com/cosmos/cosmos-sdk/archive/refs/tags/v{{ cosmovisor_version }}.tar.gz'
+    dest: '/tmp/cosmos-sdk/v{{ cosmovisor_version }}.tar.gz'
+    mode: '0644'
+  register: _download_src
+  until: _download_src is succeeded
+  retries: 3
+  delay: 2
+
+- name: Unpack cosmovisor binary
+  become: false
+  unarchive:
+    remote_src: yes
+    src: '/tmp/cosmos-sdk/v{{ cosmovisor_version }}.tar.gz'
+    dest: '/tmp/cosmos-sdk/'
+
+- name: Build cosmovisor
+  become: false
+  environment:
+    PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/opt/go/1.18.2/bin:/home/{{ cosmovisor_user }}/go/bin'
+  make:
+    chdir: '/tmp/cosmos-sdk/cosmos-sdk-{{ cosmovisor_version }}/cosmovisor'
+
+- name: Copy binary to gobin
+  become: false
+  copy:
+    remote_src: yes
+    src: '/tmp/cosmos-sdk/cosmos-sdk-{{ cosmovisor_version }}/cosmovisor/cosmovisor'
+    dest: '{{ cosmovisor_gobin }}/'
+    owner: '{{ cosmovisor_user }}'
+    group: '{{ cosmovisor_user }}'
+    mode: 'u=rwx,g=rwx,o=r'
+
+- name: Copy '{{ cosmovisor_daemon_name }}' to '{{ cosmovisor_daemon_home }}/cosmovisor/genesis/bin'
+  become: false
+  copy:
+    remote_src: yes
+    src: '{{ cosmovisor_gobin }}/{{ cosmovisor_daemon_name }}'
+    dest: '{{ cosmovisor_daemon_home }}/cosmovisor/genesis/bin'
+    owner: '{{ cosmovisor_user }}'
+    group: '{{ cosmovisor_user }}'
+    mode: 'u=rwx,g=rwx,o=rx'

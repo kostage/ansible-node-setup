@@ -1,0 +1,21 @@
+ansible.log
+
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+!group_vars/all.sample
+group_vars/
+
+inventory
+
+# Molecule python environment
+molecule-venv/
+
+# Ignore ansible galazy roles
+roles/jnv.unattended-upgrades/
+roles/singleplatform-eng.users/
+# roles/cloudalchemy.node_exporter/
+# roles/gantsign.golang/

@@ -1,14 +1,14 @@
-ssh_sshd_config: /etc/ssh/sshd_config
-ssh_authorized_keys_file: .ssh/authorized_keys
+ssh_sshd_config: '/etc/ssh/sshd_config'
+ssh_authorized_keys_file: '.ssh/authorized_keys'
 
 sshd_options:
-  - option: UsePAM
-    value: "no"
-  - option: PasswordAuthentication
-    value: "no"
-  - option: PubkeyAuthentication
-    value: "yes"
-  - option: PermitRootLogin
-    value: "no"
+  - option: 'UsePAM'
+    value: 'no'
+  - option: 'PasswordAuthentication'
+    value: 'no'
+  - option: 'PubkeyAuthentication'
+    value: 'yes'
+  - option: 'PermitRootLogin'
+    value: 'no'
   - option: AuthorizedKeysFile
-    value: "{{ ssh_authorized_keys_file }}"
+    value: '{{ ssh_authorized_keys_file }}'

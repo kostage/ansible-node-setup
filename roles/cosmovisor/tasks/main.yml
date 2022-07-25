@@ -1,0 +1,16 @@
+---
+- import_tasks: preflight.yml
+
+- import_tasks: install.yml
+
+- import_tasks: configure.yml
+
+- name: Ensure Cosmovisor is enabled on boot
+  become: true
+  systemd:
+    daemon_reload: true
+    name: cosmovisor
+    enabled: true
+    state: started
+  when:
+    - not ansible_check_mode and cosmovisor_restart

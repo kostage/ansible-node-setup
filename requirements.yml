@@ -1,5 +1,6 @@
 # - src: cloudalchemy.node_exporter
-#   version: 2.0.0
+# - src: cloudalchemy.grafana 
+# - src: cloudalchemy.prometheus
 ---
 collections:
   - ansible.posix

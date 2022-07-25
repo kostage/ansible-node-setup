@@ -6,7 +6,7 @@
         name: user
       vars:
         user_name: '{{ kuji_testnet.username }}'
-        user_password: "{{ ansible_become_pass | password_hash('sha512') }}"
+        user_password: "{{ kuji_testnet.password | password_hash('sha512') }}"
         user_ssh_key_save_path: '{{ kuji_testnet.sshkey_save_path }}'
         user_ssh_key_file: '.ssh/{{ kuji_testnet.username }}_id_rsa'
   ignore_errors: yes
@@ -25,6 +25,8 @@
   hosts: kuji_testnet
   remote_user: '{{ kuji_testnet.username }}'
   become: yes
+  vars:
+    - ansible_become_password: '{{ kuji_testnet.password }}'
   tasks:
     - import_role:
         name: apt
@@ -39,14 +41,7 @@
     - import_role:
         name: firewall # also allow non-standard SSH port
       vars:
-        firewall_rules:
-        - rule: allow
-          port: 26650:26670
-          proto: tcp
-        - rule: allow
-          port: 9300
-        - rule: allow
-          port: 9100
+        firewall_rules: '{{ kuji_testnet.firewall_rules }}'
 
 - name: Generate TLS cert
   hosts: localhost
@@ -70,33 +65,39 @@
   hosts: kuji_testnet
   remote_user: '{{ kuji_testnet.username }}'
   become: yes
+  vars:
+    - ansible_become_password: '{{ kuji_testnet.password }}'
   tasks:
     - file:
-        path: "{{ kuji_testnet.tls_remote_path }}"
+        path: '{{ kuji_testnet.tls_remote_path }}'
         state: directory
         owner: root
         group: root
-        mode: "u=rwx,g=rwx,o=rx"
+        mode: 'u=rwx,g=rwx,o=rx'
 
 - name: Transfer TLS files to remote
   hosts: kuji_testnet
   remote_user: '{{ kuji_testnet.username }}'
   become: yes
+  vars:
+    - ansible_become_password: '{{ kuji_testnet.password }}'
   tasks:
     - copy:
-        src: "{{ item }}"
-        dest: "{{ kuji_testnet.tls_remote_path }}"
+        src: '{{ item }}'
+        dest: '{{ kuji_testnet.tls_remote_path }}'
         owner: root
         group: root
-        mode: "u=rw,g=rw,o=r"
+        mode: 'u=rw,g=rw,o=r'
         force: yes
       with_items:
-        - "{{ kuji_testnet.tls_local_path }}/{{ kuji_testnet.tls_cert_name }}"
-        - "{{ kuji_testnet.tls_local_path }}/{{ kuji_testnet.tls_key_name }}"
+        - '{{ kuji_testnet.tls_local_path }}/{{ kuji_testnet.tls_cert_name }}'
+        - '{{ kuji_testnet.tls_local_path }}/{{ kuji_testnet.tls_key_name }}'
 
 - hosts: kuji_testnet
   remote_user: '{{ kuji_testnet.username }}'
   become: yes
+  vars:
+    - ansible_become_password: '{{ kuji_testnet.password }}'
   tasks:
     - import_role:
         name: nodexp
@@ -105,16 +106,18 @@
           tls_path: '{{ kuji_testnet.tls_remote_path }}'
           cert_file: '{{ kuji_testnet.tls_cert_name }}'
           key_file: '{{ kuji_testnet.tls_key_name }}'
-          password: '{{ ansible_become_pass }}'
+          password: '{{ kuji_testnet.password }}'
 
 - hosts: kuji_testnet
   remote_user: '{{ kuji_testnet.username }}'
   become: yes
+  vars:
+    - ansible_become_password: '{{ kuji_testnet.password }}'
   tasks:
     - import_role:
         name: cosmosexp
       vars:
-        cosmosexp_version: '0.3.6'
+        cosmosexp_version: '0.3.7'
         cosmosexp_user: '{{ kuji_testnet.username }}'
         cosmosexp_args:
           bech-prefix: 'kujira'
@@ -124,4 +127,17 @@
           tls_path: '{{ kuji_testnet.tls_remote_path }}'
           cert_file: '{{ kuji_testnet.tls_cert_name }}'
           key_file: '{{ kuji_testnet.tls_key_name }}'
-          password: '{{ ansible_become_pass }}'
+          password: '{{ kuji_testnet.password }}'
+
+- hosts: kuji_testnet
+  remote_user: '{{ kuji_testnet.username }}'
+  vars:
+    - ansible_become_password: '{{ kuji_testnet.password }}'
+  tasks:
+    - import_role:
+        name: cosmovisor
+      vars:
+        cosmovisor_version: '0.45.6'
+        cosmovisor_user: '{{ kuji_testnet.username }}'
+        cosmovisor_daemon_home: '/home/{{ kuji_testnet.username }}/.kujira'
+        cosmovisor_daemon_name: 'kujirad'
