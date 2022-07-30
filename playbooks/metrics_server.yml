@@ -100,6 +100,10 @@
       vars:
         prometheus_nodes: '{{ metrics_server.prometheus.nodes }}'
         prometheus_cosmos_validators: '{{ metrics_server.prometheus.cosmos_validators }}'
+        prometheus_filesystem_avail_alert_percent: 5
+        prometheus_inodes_avail_alert_percent: 5
+        prometheus_service_alert: "kujirad.service|sui.service|node_exporter.service|cosmos_exporter.service|cosmovisor.service"
+        prometheus_mem_avail_alert_percent: 5
 
 - name: Install grafana
   hosts: metrics_server

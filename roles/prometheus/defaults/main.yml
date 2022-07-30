@@ -1,3 +1,7 @@
 prometheus_nodes: {}
 prometheus_cosmos_validators: {}
 prometheus_username: 'prometheus'
+prometheus_filesystem_avail_alert_percent: 5
+prometheus_inodes_avail_alert_percent: 5
+prometheus_mem_avail_alert_percent: 10
+prometheus_service_alert: ""

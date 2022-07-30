@@ -1,0 +1,109 @@
+- hosts: sui_testnet
+  name: Create user with password and ssh key
+  remote_user: root
+  tasks:
+    - import_role:
+        name: user
+      vars:
+        user_name: '{{ sui_testnet.username }}'
+        user_password: "{{ sui_testnet.password | password_hash('sha512') }}"
+        user_ssh_key_save_path: '{{ sui_testnet.sshkey_save_path }}'
+        user_ssh_key_file: '.ssh/{{ sui_testnet.username }}_id_rsa'
+  ignore_errors: yes
+  ignore_unreachable: yes
+
+- name: Evaluating the authentication agent & adding the key...
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: sshadd
+      vars:
+        sshadd_key_path:  '{{ sui_testnet.sshkey_save_path }}/{{ sui_testnet.username }}_id_rsa'
+
+- name: Tune SSH, install packages, set FW
+  hosts: sui_testnet
+  remote_user: '{{ sui_testnet.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ sui_testnet.password }}'
+  tasks:
+    - import_role:
+        name: apt
+    - import_role:
+        name: ssh
+      vars:
+        username: '{{ sui_testnet.username }}'
+    - import_role:
+        name: docker
+      vars:
+        docker_user: '{{ sui_testnet.username }}'
+    - import_role:
+        name: firewall # also allow non-standard SSH port
+      vars:
+        firewall_rules: '{{ sui_testnet.firewall_rules }}'
+
+- name: Generate TLS cert
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: tlsgen
+      vars:
+        tlsgen_path: '{{ sui_testnet.tls_local_path }}'
+        tlsgen_key_name: '{{ sui_testnet.tls_key_name }}'
+        tlsgen_cert_name: '{{ sui_testnet.tls_cert_name }}'
+        tlsgen_ca_root_path: '{{ ca.prometheus.root_path }}'
+        tlsgen_ca_root_key_name: '{{ ca.prometheus.root_key_name }}'
+        tlsgen_ca_root_cert_name: '{{ ca.prometheus.root_cert_name }}'
+        tlsgen_ca_secret_passphrase: '{{ ca.prometheus.secret_passphrase }}'
+        tlsgen_common_name: '{{ sui_testnet.ip }}'
+        tlsgen_sans:
+          - 'IP:{{ sui_testnet.ip }}'
+
+- name: Create node TLS dir
+  hosts: sui_testnet
+  remote_user: '{{ sui_testnet.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ sui_testnet.password }}'
+  tasks:
+    - file:
+        path: '{{ sui_testnet.tls_remote_path }}'
+        state: directory
+        owner: root
+        group: root
+        mode: 'u=rwx,g=rwx,o=rx'
+
+- name: Transfer TLS files to remote
+  hosts: sui_testnet
+  remote_user: '{{ sui_testnet.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ sui_testnet.password }}'
+  tasks:
+    - copy:
+        src: '{{ item }}'
+        dest: '{{ sui_testnet.tls_remote_path }}'
+        owner: root
+        group: root
+        mode: 'u=rw,g=rw,o=r'
+        force: yes
+      with_items:
+        - '{{ sui_testnet.tls_local_path }}/{{ sui_testnet.tls_cert_name }}'
+        - '{{ sui_testnet.tls_local_path }}/{{ sui_testnet.tls_key_name }}'
+
+- hosts: sui_testnet
+  remote_user: '{{ sui_testnet.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ sui_testnet.password }}'
+  tasks:
+    - import_role:
+        name: nodexp
+      vars:
+        nodexp_security_config:
+          tls_path: '{{ sui_testnet.tls_remote_path }}'
+          cert_file: '{{ sui_testnet.tls_cert_name }}'
+          key_file: '{{ sui_testnet.tls_key_name }}'
+          password: '{{ sui_testnet.password }}'

@@ -1,0 +1,120 @@
+---
+keepass_dbx: "/Users/kostage/Doroshenko/macpass/KostageAnsible.kdbx"
+keepass_psw: !vault |
+          $ANSIBLE_VAULT;1.1;AES256
+          66653338366236313238353334383264303265623839353566663066353935356561633364623461
+          3130303862616631656466636534623233353163663063370a643532336239326233393364363362
+          64306565323964306561353230363232353665306437313838303936373434386331333934623566
+          3333643432613833330a613963643732326335363164653962393937376366616661383431653937
+          6434
+
+# Node preparation
+kuji_mainnet:
+  username:  "{{ lookup('keepass', 'kuji_mainnet/node', 'username') }}"
+  password:  "{{ lookup('keepass', 'kuji_mainnet/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/KUJI/ssh'
+  tls_local_path: '/Users/kostage/Doroshenko/crypto/KUJI/tls'
+  tls_cert_name: 'server.crt'
+  tls_key_name: 'server.key'
+  tls_remote_path: '/etc/node_tls_cert'
+  ssh_port: 32666
+  ip: "{{ lookup('keepass', 'kuji_mainnet/ip', 'password') }}"
+  firewall_rules:
+    - rule: allow
+      port: 26650:26670
+    - rule: allow
+      port: 32666
+      proto: tcp
+    - rule: allow
+      port: 9300
+    - rule: allow
+      port: 9100
+
+
+kuji_testnet:
+  username:  "{{ lookup('keepass', 'kuji_testnet/node', 'username') }}"
+  password:  "{{ lookup('keepass', 'kuji_testnet/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/KUJI_TEST/ssh'
+  tls_local_path: '/Users/kostage/Doroshenko/crypto/KUJI_TEST/tls'
+  tls_cert_name: 'server.crt'
+  tls_key_name: 'server.key'
+  tls_remote_path: '/etc/node_tls_cert'
+  ssh_port: 22
+  ip: "{{ lookup('keepass', 'kuji_testnet/ip', 'password') }}"
+  firewall_rules:
+    - rule: allow
+      port: 26650:26670
+      proto: tcp
+    - rule: allow
+      port: 9300
+    - rule: allow
+      port: 9100
+
+sui_testnet:
+  username:  "{{ lookup('keepass', 'sui_testnet/node', 'username') }}"
+  password:  "{{ lookup('keepass', 'sui_testnet/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/SUI_TEST/ssh'
+  tls_local_path: '/Users/kostage/Doroshenko/crypto/SUI_TEST/tls'
+  tls_cert_name: 'server.crt'
+  tls_key_name: 'server.key'
+  tls_remote_path: '/etc/node_tls_cert'
+  ssh_port: 22
+  ip: "{{ lookup('keepass', 'sui_testnet/ip', 'password') }}"
+  firewall_rules:
+    - rule: allow
+      port: 9000
+    - rule: allow
+      port: 9184
+    - rule: allow
+      port: 9100
+
+ca:
+  prometheus:
+    secret_passphrase: 'kostage'
+    common_name: 'Konstantin Doroshenko CA'
+    root_path: '/Users/kostage/Doroshenko/crypto/METRICS/CA'
+    root_cert_name: 'ca_root.crt'
+    root_key_name: 'ca_root.key'
+
+metrics_server:
+  username: "{{ lookup('keepass', 'metrics/grafana_password', 'username') }}"
+  password: "{{ lookup('keepass', 'metrics/grafana_password', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/METRICS/ssh'
+  tls_local_path: '/Users/kostage/Doroshenko/crypto/METRICS/tls'
+  tls_cert_name: 'macgen.crt'
+  tls_key_name: 'macgen.key'
+  tls_remote_path: '/etc/node_tls_cert'
+  cert_trust_store: '/usr/local/share/ca-certificates'
+  ssh_port: 22
+
+  prometheus:
+    # nodes
+    nodes:
+      - name: 'kuji_testnet_node'
+        password: "{{ lookup('keepass', 'kuji_testnet/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'kuji_testnet/ip', 'password') }}"
+
+      - name: 'kuji_mainnet_node'
+        password: "{{ lookup('keepass', 'kuji_mainnet/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'kuji_mainnet/ip', 'password') }}"
+
+      - name: 'sui_testnet_node'
+        password: "{{ lookup('keepass', 'sui_testnet/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'sui_testnet/ip', 'password') }}"
+
+    # validators
+    cosmos_validators:
+      - name: "{{ lookup('keepass', 'kuji_testnet/node', 'username') }}_kuji_testnet"
+        password: "{{ lookup('keepass', 'kuji_testnet/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'kuji_testnet/ip', 'password') }}"
+        valoper: "{{ lookup('keepass', 'kuji_testnet/valoper', 'username') }}"
+        wallet: "{{ lookup('keepass', 'kuji_testnet/valoper', 'password') }}"
+
+      - name: "{{ lookup('keepass', 'kuji_mainnet/node', 'username') }}_kuji_mainnet"
+        password: "{{ lookup('keepass', 'kuji_mainnet/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'kuji_mainnet/ip', 'password') }}"
+        valoper: "{{ lookup('keepass', 'kuji_mainnet/valoper', 'username') }}"
+        wallet: "{{ lookup('keepass', 'kuji_mainnet/valoper', 'password') }}"
+
+telegram_bot_token: "{{ lookup('keepass', 'telegram_bot/token', 'password') }}"
+telegram_chat_id: "{{ lookup('keepass', 'telegram_bot/chat_id', 'password') | int }}"
