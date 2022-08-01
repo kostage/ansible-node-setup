@@ -31,16 +31,16 @@ kuji_mainnet:
       port: 9100
 
 
-kuji_testnet:
-  username:  "{{ lookup('keepass', 'kuji_testnet/node', 'username') }}"
-  password:  "{{ lookup('keepass', 'kuji_testnet/node', 'password') }}"
-  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/KUJI_TEST/ssh'
-  tls_local_path: '/Users/kostage/Doroshenko/crypto/KUJI_TEST/tls'
+celestia_testnet:
+  username:  "{{ lookup('keepass', 'celestia_testnet/node', 'username') }}"
+  password:  "{{ lookup('keepass', 'celestia_testnet/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/CELESTIA_TEST/ssh'
+  tls_local_path: '/Users/kostage/Doroshenko/crypto/CELESTIA_TEST/tls'
   tls_cert_name: 'server.crt'
   tls_key_name: 'server.key'
   tls_remote_path: '/etc/node_tls_cert'
   ssh_port: 22
-  ip: "{{ lookup('keepass', 'kuji_testnet/ip', 'password') }}"
+  ip: "{{ lookup('keepass', 'celestia_testnet/ip', 'password') }}"
   firewall_rules:
     - rule: allow
       port: 26650:26670
@@ -90,9 +90,9 @@ metrics_server:
   prometheus:
     # nodes
     nodes:
-      - name: 'kuji_testnet_node'
-        password: "{{ lookup('keepass', 'kuji_testnet/node', 'password') }}"
-        ip: "{{ lookup('keepass', 'kuji_testnet/ip', 'password') }}"
+      - name: 'celestia_testnet_node'
+        password: "{{ lookup('keepass', 'celestia_testnet/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'celestia_testnet/ip', 'password') }}"
 
       - name: 'kuji_mainnet_node'
         password: "{{ lookup('keepass', 'kuji_mainnet/node', 'password') }}"
@@ -104,11 +104,11 @@ metrics_server:
 
     # validators
     cosmos_validators:
-      - name: "{{ lookup('keepass', 'kuji_testnet/node', 'username') }}_kuji_testnet"
-        password: "{{ lookup('keepass', 'kuji_testnet/node', 'password') }}"
-        ip: "{{ lookup('keepass', 'kuji_testnet/ip', 'password') }}"
-        valoper: "{{ lookup('keepass', 'kuji_testnet/valoper', 'username') }}"
-        wallet: "{{ lookup('keepass', 'kuji_testnet/valoper', 'password') }}"
+      # - name: "{{ lookup('keepass', 'celestia_testnet/node', 'username') }}_celestia_testnet"
+      #   password: "{{ lookup('keepass', 'celestia_testnet/node', 'password') }}"
+      #   ip: "{{ lookup('keepass', 'celestia_testnet/ip', 'password') }}"
+      #   valoper: "{{ lookup('keepass', 'celestia_testnet/valoper', 'username') }}"
+      #   wallet: "{{ lookup('keepass', 'celestia_testnet/valoper', 'password') }}"
 
       - name: "{{ lookup('keepass', 'kuji_mainnet/node', 'username') }}_kuji_mainnet"
         password: "{{ lookup('keepass', 'kuji_mainnet/node', 'password') }}"

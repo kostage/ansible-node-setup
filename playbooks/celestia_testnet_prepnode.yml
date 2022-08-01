@@ -1,0 +1,143 @@
+- hosts: celestia_testnet
+  name: Create user with password and ssh key
+  remote_user: root
+  tasks:
+    - import_role:
+        name: user
+      vars:
+        user_name: '{{ celestia_testnet.username }}'
+        user_password: "{{ celestia_testnet.password | password_hash('sha512') }}"
+        user_ssh_key_save_path: '{{ celestia_testnet.sshkey_save_path }}'
+        user_ssh_key_file: '.ssh/{{ celestia_testnet.username }}_id_rsa'
+  ignore_errors: yes
+  ignore_unreachable: yes
+
+- name: Evaluating the authentication agent & adding the key...
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: sshadd
+      vars:
+        sshadd_key_path:  '{{ celestia_testnet.sshkey_save_path }}/{{ celestia_testnet.username }}_id_rsa'
+
+- name: Tune SSH, install packages, golang, set FW
+  hosts: celestia_testnet
+  remote_user: '{{ celestia_testnet.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ celestia_testnet.password }}'
+  tasks:
+    - import_role:
+        name: apt
+    - import_role:
+        name: ssh
+      vars:
+        username: '{{ celestia_testnet.username }}'
+    - import_role:
+        name: gantsign.golang
+      vars:
+        golang_gopath: '/home/{{ celestia_testnet.username }}/go'
+    - import_role:
+        name: firewall # also allow non-standard SSH port
+      vars:
+        firewall_rules: '{{ celestia_testnet.firewall_rules }}'
+
+- name: Generate TLS cert
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: tlsgen
+      vars:
+        tlsgen_path: '{{ celestia_testnet.tls_local_path }}'
+        tlsgen_key_name: '{{ celestia_testnet.tls_key_name }}'
+        tlsgen_cert_name: '{{ celestia_testnet.tls_cert_name }}'
+        tlsgen_ca_root_path: '{{ ca.prometheus.root_path }}'
+        tlsgen_ca_root_key_name: '{{ ca.prometheus.root_key_name }}'
+        tlsgen_ca_root_cert_name: '{{ ca.prometheus.root_cert_name }}'
+        tlsgen_ca_secret_passphrase: '{{ ca.prometheus.secret_passphrase }}'
+        tlsgen_common_name: '{{ celestia_testnet.ip }}'
+        tlsgen_sans:
+          - 'IP:{{ celestia_testnet.ip }}'
+
+- name: Create node TLS dir
+  hosts: celestia_testnet
+  remote_user: '{{ celestia_testnet.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ celestia_testnet.password }}'
+  tasks:
+    - file:
+        path: '{{ celestia_testnet.tls_remote_path }}'
+        state: directory
+        owner: root
+        group: root
+        mode: 'u=rwx,g=rwx,o=rx'
+
+- name: Transfer TLS files to remote
+  hosts: celestia_testnet
+  remote_user: '{{ celestia_testnet.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ celestia_testnet.password }}'
+  tasks:
+    - copy:
+        src: '{{ item }}'
+        dest: '{{ celestia_testnet.tls_remote_path }}'
+        owner: root
+        group: root
+        mode: 'u=rw,g=rw,o=r'
+        force: yes
+      with_items:
+        - '{{ celestia_testnet.tls_local_path }}/{{ celestia_testnet.tls_cert_name }}'
+        - '{{ celestia_testnet.tls_local_path }}/{{ celestia_testnet.tls_key_name }}'
+
+- hosts: celestia_testnet
+  remote_user: '{{ celestia_testnet.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ celestia_testnet.password }}'
+  tasks:
+    - import_role:
+        name: nodexp
+      vars:
+        nodexp_security_config:
+          tls_path: '{{ celestia_testnet.tls_remote_path }}'
+          cert_file: '{{ celestia_testnet.tls_cert_name }}'
+          key_file: '{{ celestia_testnet.tls_key_name }}'
+          password: '{{ celestia_testnet.password }}'
+
+- hosts: celestia_testnet
+  remote_user: '{{ celestia_testnet.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ celestia_testnet.password }}'
+  tasks:
+    - import_role:
+        name: cosmosexp
+      vars:
+        cosmosexp_version: '0.3.7'
+        cosmosexp_user: '{{ celestia_testnet.username }}'
+        cosmosexp_args:
+          bech-prefix: 'celestia'
+          denom: 'utia'
+          denom-coefficient: '1000000'
+        cosmosexp_security_config:
+          tls_path: '{{ celestia_testnet.tls_remote_path }}'
+          cert_file: '{{ celestia_testnet.tls_cert_name }}'
+          key_file: '{{ celestia_testnet.tls_key_name }}'
+          password: '{{ celestia_testnet.password }}'
+
+- hosts: celestia_testnet
+  remote_user: '{{ celestia_testnet.username }}'
+  vars:
+    - ansible_become_password: '{{ celestia_testnet.password }}'
+  tasks:
+    - import_role:
+        name: cosmovisor
+      vars:
+        cosmovisor_version: '0.45.6'
+        cosmovisor_user: '{{ celestia_testnet.username }}'
+        cosmovisor_daemon_home: '/home/{{ celestia_testnet.username }}/.celestia-appd'
+        cosmovisor_daemon_name: 'celestia-appd'
