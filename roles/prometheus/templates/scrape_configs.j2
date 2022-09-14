@@ -57,4 +57,22 @@
       target_label: instance
     - target_label: __address__
       replacement: '{{ validator.ip }}:9300'
+
+- job_name: '{{ validator.name }}_price_feeder_wallet'
+  scrape_interval: 15s
+  metrics_path: /metrics/wallet
+  scheme: https
+  static_configs:
+    - targets:
+      - '{{ validator.price_feeder_wallet }}'
+  basic_auth:
+    username: '{{ prometheus_username }}'
+    password: '{{ validator.password }}'
+  relabel_configs:
+    - source_labels: [__address__]
+      target_label: __param_address
+    - source_labels: [__param_address]
+      target_label: instance
+    - target_label: __address__
+      replacement: '{{ validator.ip }}:9300'
 {% endfor %}

@@ -1,7 +1,9 @@
 prometheus_nodes: {}
 prometheus_cosmos_validators: {}
 prometheus_username: 'prometheus'
-prometheus_filesystem_avail_alert_percent: 5
-prometheus_inodes_avail_alert_percent: 5
+prometheus_filesystem_avail_alert_percent: 10
+prometheus_inodes_avail_alert_percent: 10
 prometheus_mem_avail_alert_percent: 10
 prometheus_service_alert: ""
+prometheus_delegated_token_notify_threshold: 10
+prometheus_wallet_tokens_low_alert_threshold: 3

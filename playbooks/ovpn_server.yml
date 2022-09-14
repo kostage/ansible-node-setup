@@ -1,0 +1,118 @@
+- hosts: ovpn_server
+  name: Create user with password and ssh key
+  remote_user: root
+  tasks:
+    - import_role:
+        name: user
+      vars:
+        user_name: '{{ ovpn_server.username }}'
+        user_password: "{{ ovpn_server.password | password_hash('sha512') }}"
+        user_ssh_key_save_path: '{{ ovpn_server.sshkey_save_path }}'
+        user_ssh_key_file: '.ssh/{{ ovpn_server.username }}_id_rsa'
+  ignore_errors: yes
+  ignore_unreachable: yes
+
+- name: Evaluating the authentication agent & adding the key...
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: sshadd
+      vars:
+        sshadd_key_path:  '{{ ovpn_server.sshkey_save_path }}/{{ ovpn_server.username }}_id_rsa'
+
+- name: Tune SSH, install packages, golang, set FW
+  hosts: ovpn_server
+  remote_user: '{{ ovpn_server.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ ovpn_server.password }}'
+  tasks:
+    - import_role:
+        name: ssh
+      vars:
+        username: '{{ ovpn_server.username }}'
+    - import_role:
+        name: docker
+      vars:
+        docker_user: '{{ ovpn_server.username }}'
+    - import_role:
+        name: firewall
+      vars:
+        firewall_rules: "{{ ovpn_server.firewall_rules }}"
+
+- name: Generate TLS cert
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: tlsgen
+      vars:
+        tlsgen_path: '{{ ovpn_server.tls_local_path }}'
+        tlsgen_key_name: '{{ ovpn_server.tls_key_name }}'
+        tlsgen_cert_name: '{{ ovpn_server.tls_cert_name }}'
+        tlsgen_ca_root_path: '{{ ca.prometheus.root_path }}'
+        tlsgen_ca_root_key_name: '{{ ca.prometheus.root_key_name }}'
+        tlsgen_ca_root_cert_name: '{{ ca.prometheus.root_cert_name }}'
+        tlsgen_ca_secret_passphrase: '{{ ca.prometheus.secret_passphrase }}'
+        tlsgen_common_name: '{{ ovpn_server.ip }}'
+        tlsgen_sans:
+          - 'IP:{{ ovpn_server.ip }}'
+
+- name: Create node TLS dir
+  hosts: ovpn_server
+  remote_user: '{{ ovpn_server.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ ovpn_server.password }}'
+  tasks:
+    - file:
+        path: '{{ ovpn_server.tls_remote_path }}'
+        state: directory
+        owner: root
+        group: root
+        mode: 'u=rwx,g=rwx,o=rx'
+
+- name: Transfer TLS files to remote
+  hosts: ovpn_server
+  remote_user: '{{ ovpn_server.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ ovpn_server.password }}'
+  tasks:
+    - copy:
+        src: '{{ item }}'
+        dest: '{{ ovpn_server.tls_remote_path }}'
+        owner: root
+        group: root
+        mode: 'u=rw,g=rw,o=r'
+        force: yes
+      with_items:
+        - '{{ ovpn_server.tls_local_path }}/{{ ovpn_server.tls_cert_name }}'
+        - '{{ ovpn_server.tls_local_path }}/{{ ovpn_server.tls_key_name }}'
+
+- hosts: ovpn_server
+  remote_user: '{{ ovpn_server.username }}'
+  become: yes
+  vars:
+    - ansible_become_password: '{{ ovpn_server.password }}'
+  tasks:
+    - import_role:
+        name: nodexp
+      vars:
+        nodexp_security_config:
+          tls_path: '{{ ovpn_server.tls_remote_path }}'
+          cert_file: '{{ ovpn_server.tls_cert_name }}'
+          key_file: '{{ ovpn_server.tls_key_name }}'
+          password: '{{ ovpn_server.password }}'
+
+- hosts: ovpn_server
+  remote_user: '{{ ovpn_server.username }}'
+  become: no
+  tasks:
+    - import_role:
+        name: openvpn
+      vars:
+        openvpn_ip: '{{ ovpn_server.ip }}'
+        openvpn_username: '{{ ovpn_server.username }}'
+        openvpn_config_save_path: '{{ ovpn_server.ovpn_config_save_path }}'

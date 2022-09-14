@@ -98,13 +98,21 @@
           summary: 'Host OOM kill detected'
       # Cosmos
       - alert: DelegatedTokensAmountChanged
-        expr: "(\n delta(cosmos_validator_tokens[5m]) != 0\n)"
+        expr: "(\n round(delta(cosmos_validator_tokens[5m])) > {{ prometheus_delegated_token_notify_threshold }}\n)"
         for: 0m
         labels:
           severity: warning
         annotations:
           description: '{% raw %}Validator {{ $labels.moniker }} tokens on {{ $labels.chain_id }} has changed by {{ $value }}.{% endraw %}'
           summary: "Cosmos validator staked tokens change"
+      - alert: WalletBalanceLow
+        expr: "(\n cosmos_wallet_balance < {{ prometheus_wallet_tokens_low_alert_threshold }}\n)"
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          description: '{% raw %}Wallet {{ $labels.address }} on {{ $labels.chain_id }} has only {{ $value }}{{ $labels.denom }}.{% endraw %}'
+          summary: "Cosmos wallet balance low"
       - alert: MissedBlocksChanged
         expr: "(\n round(delta(cosmos_validator_missed_blocks[5m])) > 0\n)"
         for: 0m

@@ -29,7 +29,8 @@ kuji_mainnet:
       port: 9300
     - rule: allow
       port: 9100
-
+    - rule: allow
+      port: 7171
 
 celestia_testnet:
   username:  "{{ lookup('keepass', 'celestia_testnet/node', 'username') }}"
@@ -50,23 +51,24 @@ celestia_testnet:
     - rule: allow
       port: 9100
 
-sui_testnet:
-  username:  "{{ lookup('keepass', 'sui_testnet/node', 'username') }}"
-  password:  "{{ lookup('keepass', 'sui_testnet/node', 'password') }}"
-  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/SUI_TEST/ssh'
-  tls_local_path: '/Users/kostage/Doroshenko/crypto/SUI_TEST/tls'
+ovpn_server:
+  username:  "{{ lookup('keepass', 'ovpn_server/node', 'username') }}"
+  password:  "{{ lookup('keepass', 'ovpn_server/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/OVPN/ssh'
+  ssh_port: 22
+  tls_local_path: '/Users/kostage/Doroshenko/crypto/OVPN/tls'
   tls_cert_name: 'server.crt'
   tls_key_name: 'server.key'
   tls_remote_path: '/etc/node_tls_cert'
-  ssh_port: 22
-  ip: "{{ lookup('keepass', 'sui_testnet/ip', 'password') }}"
+  ovpn_config_save_path: '/Users/kostage/Doroshenko/crypto/OVPN'
+  ip: "{{ lookup('keepass', 'ovpn_server/ip', 'password') }}"
   firewall_rules:
     - rule: allow
-      port: 9000
-    - rule: allow
-      port: 9184
+      port: 1194
     - rule: allow
       port: 9100
+    - rule: allow
+      port: 22
 
 ca:
   prometheus:
@@ -98,9 +100,9 @@ metrics_server:
         password: "{{ lookup('keepass', 'kuji_mainnet/node', 'password') }}"
         ip: "{{ lookup('keepass', 'kuji_mainnet/ip', 'password') }}"
 
-      - name: 'sui_testnet_node'
-        password: "{{ lookup('keepass', 'sui_testnet/node', 'password') }}"
-        ip: "{{ lookup('keepass', 'sui_testnet/ip', 'password') }}"
+      - name: 'ovpn_server'
+        password: "{{ lookup('keepass', 'ovpn_server/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'ovpn_server/ip', 'password') }}"
 
     # validators
     cosmos_validators:
@@ -113,8 +115,9 @@ metrics_server:
       - name: "{{ lookup('keepass', 'kuji_mainnet/node', 'username') }}_kuji_mainnet"
         password: "{{ lookup('keepass', 'kuji_mainnet/node', 'password') }}"
         ip: "{{ lookup('keepass', 'kuji_mainnet/ip', 'password') }}"
-        valoper: "{{ lookup('keepass', 'kuji_mainnet/valoper', 'username') }}"
-        wallet: "{{ lookup('keepass', 'kuji_mainnet/valoper', 'password') }}"
+        valoper: "{{ lookup('keepass', 'kuji_mainnet/valoper', 'password') }}"
+        wallet: "{{ lookup('keepass', 'kuji_mainnet/wallet', 'password') }}"
+        price_feeder_wallet: "{{ lookup('keepass', 'kuji_mainnet/price_feeder_wallet', 'password') }}"
 
 telegram_bot_token: "{{ lookup('keepass', 'telegram_bot/token', 'password') }}"
 telegram_chat_id: "{{ lookup('keepass', 'telegram_bot/chat_id', 'password') | int }}"

@@ -1,0 +1,73 @@
+- name: Create a volume
+  docker_volume:
+    name: '{{ openvpn_container_name }}'
+
+- name: Container generate server config
+  docker_container:
+    name: '{{ openvpn_container_name }}'
+    image: kylemanna/openvpn
+    auto_remove: yes
+    state: present
+    volumes:
+      - '{{ openvpn_volume }}:/etc/openvpn'
+    command: 'ovpn_genconfig -u udp://{{ openvpn_ip }}'
+
+- name: Container init PKI
+  docker_container:
+    name: '{{ openvpn_container_name }}'
+    image: kylemanna/openvpn
+    auto_remove: yes
+    state: present
+    volumes:
+      - '{{ openvpn_volume }}:/etc/openvpn'
+    command: 'ovpn_initpki'
+
+- name: Container generate client config
+  docker_container:
+    name: '{{ openvpn_container_name }}'
+    image: kylemanna/openvpn
+    auto_remove: yes
+    state: present
+    volumes:
+      - '{{ openvpn_volume }}:/etc/openvpn'
+    command: 'easyrsa build-client-full {{ openvpn_username }} nopass'
+
+- name: Container save client config to register
+  docker_container:
+    name: '{{ openvpn_container_name }}'
+    image: kylemanna/openvpn
+    detach: no
+    volumes:
+      - '{{ openvpn_volume }}:/etc/openvpn'
+    command: 'ovpn_getclient {{ openvpn_username }}'
+  register: ovpn_client_config_content
+
+- name: Stop a container
+  docker_container:
+    name: '{{ openvpn_container_name }}'
+    state: absent
+
+- name: Save client config content to file
+  copy:
+    content: '{{ ovpn_client_config_content.container.Output }}'
+    dest: '{{ openvpn_username }}.ovpn'
+
+- name: Copy ovpn client config to local machine
+  ansible.posix.synchronize:
+    mode: pull
+    checksum: yes
+    src: '/home/{{ openvpn_username }}/{{ openvpn_username }}.ovpn'
+    dest: '{{ openvpn_config_save_path }}'
+
+- name: Start OpenVPN server process 
+  docker_container:
+    name: '{{ openvpn_container_name }}'
+    image: kylemanna/openvpn
+    volumes:
+      - '{{ openvpn_volume }}:/etc/openvpn'
+    ports:
+      - 1194:1194
+    capabilities:
+      - NET_ADMIN
+    detach: yes
+    state: present
