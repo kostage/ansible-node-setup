@@ -93,7 +93,8 @@
         - '{{ kuji_mainnet.tls_local_path }}/{{ kuji_mainnet.tls_cert_name }}'
         - '{{ kuji_mainnet.tls_local_path }}/{{ kuji_mainnet.tls_key_name }}'
 
-- hosts: kuji_mainnet
+- name: Install Node Exporter
+  hosts: kuji_mainnet
   remote_user: '{{ kuji_mainnet.username }}'
   become: yes
   vars:
@@ -108,7 +109,8 @@
           key_file: '{{ kuji_mainnet.tls_key_name }}'
           password: '{{ kuji_mainnet.password }}'
 
-- hosts: kuji_mainnet
+- name: Install Cosmos Exporter
+  hosts: kuji_mainnet
   remote_user: '{{ kuji_mainnet.username }}'
   become: yes
   vars:
@@ -129,8 +131,22 @@
           key_file: '{{ kuji_mainnet.tls_key_name }}'
           password: '{{ kuji_mainnet.password }}'
 
-# now switch SSH to alternate port
-- hosts: kuji_mainnet
+- name: Install Cosmovisor
+  hosts: kuji_mainnet
+  remote_user: '{{ kuji_mainnet.username }}'
+  vars:
+    - ansible_become_password: '{{ kuji_mainnet.password }}'
+  tasks:
+    - import_role:
+        name: cosmovisor
+      vars:
+        cosmovisor_version: '0.7.0'
+        cosmovisor_user: '{{ kuji_mainnet.username }}'
+        cosmovisor_daemon_home: '/home/{{ kuji_mainnet.username }}/.kujira'
+        cosmovisor_daemon_name: 'kujirad'
+
+- name: Switch SSH To Alternate Port
+  hosts: kuji_mainnet
   remote_user: "{{ kuji_mainnet.username }}"
   become: yes
   tasks:
@@ -140,16 +156,3 @@
         sshd_options:
           - option: Port
             value: "{{ kuji_mainnet.ssh_port }}"
-
-- hosts: kuji_mainnet
-  remote_user: '{{ kuji_mainnet.username }}'
-  vars:
-    - ansible_become_password: '{{ kuji_mainnet.password }}'
-  tasks:
-    - import_role:
-        name: cosmovisor
-      vars:
-        cosmovisor_version: '0.45.6'
-        cosmovisor_user: '{{ kuji_mainnet.username }}'
-        cosmovisor_daemon_home: '/home/{{ kuji_mainnet.username }}/.kujira'
-        cosmovisor_daemon_name: 'kujirad'

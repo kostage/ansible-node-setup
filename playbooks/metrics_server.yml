@@ -1,93 +1,93 @@
-- hosts: metrics_server
-  name: Create user with password and ssh key
-  remote_user: root
-  tasks:
-    - import_role:
-        name: user
-      vars:
-        user_name: '{{ metrics_server.username }}'
-        user_password: "{{ metrics_server.password | password_hash('sha512') }}"
-        user_ssh_key_save_path: '{{ metrics_server.sshkey_save_path }}'
-        user_ssh_key_file: '.ssh/{{ metrics_server.username }}_id_rsa'
-  ignore_errors: yes
-  ignore_unreachable: yes
+# - hosts: metrics_server
+#   name: Create user with password and ssh key
+#   remote_user: root
+#   tasks:
+#     - import_role:
+#         name: user
+#       vars:
+#         user_name: '{{ metrics_server.username }}'
+#         user_password: "{{ metrics_server.password | password_hash('sha512') }}"
+#         user_ssh_key_save_path: '{{ metrics_server.sshkey_save_path }}'
+#         user_ssh_key_file: '.ssh/{{ metrics_server.username }}_id_rsa'
+#   ignore_errors: yes
+#   ignore_unreachable: yes
 
-- name: Evaluating the authentication agent & adding the key...
-  hosts: localhost
-  connection: local
-  tasks:
-    - import_role:
-        name: sshadd
-      vars:
-        sshadd_key_path:  '{{ metrics_server.sshkey_save_path }}/{{ metrics_server.username }}_id_rsa'
+# - name: Evaluating the authentication agent & adding the key...
+#   hosts: localhost
+#   connection: local
+#   tasks:
+#     - import_role:
+#         name: sshadd
+#       vars:
+#         sshadd_key_path:  '{{ metrics_server.sshkey_save_path }}/{{ metrics_server.username }}_id_rsa'
 
-- name: Tune SSH, install packages, golang, set FW
-  hosts: metrics_server
-  remote_user: '{{ metrics_server.username }}'
-  become: yes
-  vars:
-    - ansible_become_password: '{{ metrics_server.password }}'
-  tasks:
-    - import_role:
-        name: apt
-    - import_role:
-        name: ssh
-      vars:
-        username: '{{ metrics_server.username }}'
-    - import_role:
-        name: gantsign.golang
-      vars:
-        golang_gopath: '/home/{{ metrics_server.username }}/go'
-    - import_role:
-        name: firewall
-      vars:
-        firewall_rules:
-        - rule: allow
-          port: 3000
+# - name: Tune SSH, install packages, golang, set FW
+#   hosts: metrics_server
+#   remote_user: '{{ metrics_server.username }}'
+#   become: yes
+#   vars:
+#     - ansible_become_password: '{{ metrics_server.password }}'
+#   tasks:
+#     - import_role:
+#         name: apt
+#     - import_role:
+#         name: ssh
+#       vars:
+#         username: '{{ metrics_server.username }}'
+#     - import_role:
+#         name: gantsign.golang
+#       vars:
+#         golang_gopath: '/home/{{ metrics_server.username }}/go'
+#     - import_role:
+#         name: firewall
+#       vars:
+#         firewall_rules:
+#         - rule: allow
+#           port: 3000
 
-- hosts: metrics_server
-  remote_user: '{{ metrics_server.username }}'
-  become: yes
-  vars:
-    - ansible_become_password: '{{ metrics_server.password }}'
-  tasks:
-    - import_role:
-        name: nodexp
-      vars:
-        nodexp_tls: no
+# - hosts: metrics_server
+#   remote_user: '{{ metrics_server.username }}'
+#   become: yes
+#   vars:
+#     - ansible_become_password: '{{ metrics_server.password }}'
+#   tasks:
+#     - import_role:
+#         name: nodexp
+#       vars:
+#         nodexp_tls: no
 
-- name: Install root cert to allow prometheus scrape nodes
-  hosts: metrics_server
-  remote_user: '{{ metrics_server.username }}'
-  become: yes
-  vars:
-    - ansible_become_password: '{{ metrics_server.password }}'
-  tasks:
-    - copy:
-        src: '{{ ca.prometheus.root_path }}/{{ ca.prometheus.root_cert_name }}'
-        dest: '{{ metrics_server.cert_trust_store }}'
-        owner: root
-        group: root
-        mode: 'u=rw,g=r,o=r'
-        force: yes
-    - ansible.builtin.shell: update-ca-certificates
+# - name: Install root cert to allow prometheus scrape nodes
+#   hosts: metrics_server
+#   remote_user: '{{ metrics_server.username }}'
+#   become: yes
+#   vars:
+#     - ansible_become_password: '{{ metrics_server.password }}'
+#   tasks:
+#     - copy:
+#         src: '{{ ca.prometheus.root_path }}/{{ ca.prometheus.root_cert_name }}'
+#         dest: '{{ metrics_server.cert_trust_store }}'
+#         owner: root
+#         group: root
+#         mode: 'u=rw,g=r,o=r'
+#         force: yes
+#     - ansible.builtin.shell: update-ca-certificates
 
-- name: Transfer TLS files to remote
-  hosts: metrics_server
-  remote_user: '{{ metrics_server.username }}'
-  vars:
-    - ansible_become_password: '{{ metrics_server.password }}'
-  tasks:
-    - copy:
-        src: '{{ item }}'
-        dest: '{{ metrics_server.tls_remote_path }}'
-        owner: root
-        group: root
-        mode: 'u=rw,g=rw,o=r'
-        force: yes
-      with_items:
-        - '{{ metrics_server.tls_local_path }}/{{ metrics_server.tls_cert_name }}'
-        - '{{ metrics_server.tls_local_path }}/{{ metrics_server.tls_key_name }}'
+# - name: Transfer TLS files to remote
+#   hosts: metrics_server
+#   remote_user: '{{ metrics_server.username }}'
+#   vars:
+#     - ansible_become_password: '{{ metrics_server.password }}'
+#   tasks:
+#     - copy:
+#         src: '{{ item }}'
+#         dest: '{{ metrics_server.tls_remote_path }}'
+#         owner: root
+#         group: root
+#         mode: 'u=rw,g=rw,o=r'
+#         force: yes
+#       with_items:
+#         - '{{ metrics_server.tls_local_path }}/{{ metrics_server.tls_cert_name }}'
+#         - '{{ metrics_server.tls_local_path }}/{{ metrics_server.tls_key_name }}'
 
 - name: Install prometheus
   hosts: metrics_server

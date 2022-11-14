@@ -29,6 +29,11 @@
     provider: selfsigned
   when: tlsgen_ca_create
 
+- name: Create tls files directory
+  file:
+    path: "{{ tlsgen_path }}"
+    state: directory
+
 - name: Create private key for new certificate for server
   community.crypto.openssl_privatekey:
     path: "{{ tlsgen_path }}/{{ tlsgen_key_name }}"
