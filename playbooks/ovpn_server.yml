@@ -19,7 +19,7 @@
     - import_role:
         name: sshadd
       vars:
-        sshadd_key_path:  '{{ ovpn_server.sshkey_save_path }}/{{ ovpn_server.username }}_id_rsa'
+        sshadd_key_path: '{{ ovpn_server.sshkey_save_path }}/{{ ovpn_server.username }}_id_rsa'
 
 - name: Tune SSH, install packages, golang, set FW
   hosts: ovpn_server

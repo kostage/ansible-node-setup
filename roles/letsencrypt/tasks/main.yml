@@ -1,0 +1,6 @@
+---
+- import_tasks: preflight.yml
+  become: yes
+
+- import_tasks: generate.yml
+  become: yes

@@ -39,7 +39,7 @@
       vars:
         golang_gopath: '/home/{{ kuji_mainnet.username }}/go'
     - import_role:
-        name: firewall # also allow non-standard SSH port
+        name: firewall
       vars:
         firewall_rules: '{{ kuji_mainnet.firewall_rules }}'
 

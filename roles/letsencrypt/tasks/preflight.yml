@@ -1,0 +1,4 @@
+- name: Check existence of TLS fullchain cert file
+  stat:
+    path: '{{ letsencrypt_dir }}/{{ letsencrypt_domain_name }}-fullchain.crt'
+  register: __letsencrypt_fullchain_cert_file

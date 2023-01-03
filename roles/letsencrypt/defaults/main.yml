@@ -1,0 +1,7 @@
+---
+letsencrypt_acme_challenge_type: http-01
+letsencrypt_acme_directory: https://acme-v02.api.letsencrypt.org/directory
+letsencrypt_acme_version: 2
+letsencrypt_acme_email: '{{ letsencrypt_email }}'
+letsencrypt_dir: '/etc/letsencrypt'
+letsencrypt_domain_name: '{{ letsencrypt_domain_name }}'
