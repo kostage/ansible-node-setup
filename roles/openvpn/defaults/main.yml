@@ -1,2 +1,3 @@
 openvpn_volume: ovpn-data
 openvpn_container_name: ovpn_container
+openvpn_image_name: kylemanna/openvpn

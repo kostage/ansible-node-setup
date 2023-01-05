@@ -113,6 +113,7 @@
     - import_role:
         name: openvpn
       vars:
+        openvpn_clients: '{{ ovpn_server.clients }}'
         openvpn_ip: '{{ ovpn_server.ip }}'
         openvpn_username: '{{ ovpn_server.username }}'
         openvpn_config_save_path: '{{ ovpn_server.ovpn_config_save_path }}'

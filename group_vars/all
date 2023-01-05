@@ -43,6 +43,7 @@ ovpn_server:
   tls_remote_path: '/etc/node_tls_cert'
   ovpn_config_save_path: '/Users/kostage/Doroshenko/crypto/OVPN'
   ip: "{{ lookup('keepass', 'ovpn_server/ip', 'password') }}"
+  clients: ['kostage', 'kostagemac', 'guest']
   firewall_rules:
     - rule: allow
       port: 1194

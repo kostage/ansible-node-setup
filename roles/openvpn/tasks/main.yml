@@ -5,42 +5,57 @@
 - name: Container generate server config
   docker_container:
     name: '{{ openvpn_container_name }}'
-    image: kylemanna/openvpn
-    auto_remove: yes
-    state: present
+    image: '{{ openvpn_image_name }}'
     volumes:
       - '{{ openvpn_volume }}:/etc/openvpn'
     command: 'ovpn_genconfig -u udp://{{ openvpn_ip }}'
 
+- name: Stop a container
+  docker_container:
+    name: '{{ openvpn_container_name }}'
+    state: absent
+
 - name: Container init PKI
   docker_container:
     name: '{{ openvpn_container_name }}'
-    image: kylemanna/openvpn
-    auto_remove: yes
-    state: present
+    image: '{{ openvpn_image_name }}'
+    detach: no
     volumes:
       - '{{ openvpn_volume }}:/etc/openvpn'
     command: 'ovpn_initpki'
+  ignore_errors: yes
 
-- name: Container generate client config
+- name: Stop a container
   docker_container:
     name: '{{ openvpn_container_name }}'
-    image: kylemanna/openvpn
-    auto_remove: yes
-    state: present
+    state: absent
+
+- name: Container generate client configs
+  docker_container:
+    name: '{{ openvpn_container_name }}'
+    image: '{{ openvpn_image_name }}'
+    detach: no
     volumes:
       - '{{ openvpn_volume }}:/etc/openvpn'
-    command: 'easyrsa build-client-full {{ openvpn_username }} nopass'
+    command: 'easyrsa build-client-full {{ item }} nopass'
+  loop: '{{ openvpn_clients }}'
+  ignore_errors: yes
+
+- name: Stop a container
+  docker_container:
+    name: '{{ openvpn_container_name }}'
+    state: absent
 
 - name: Container save client config to register
   docker_container:
     name: '{{ openvpn_container_name }}'
-    image: kylemanna/openvpn
+    image: '{{ openvpn_image_name }}'
     detach: no
     volumes:
       - '{{ openvpn_volume }}:/etc/openvpn'
-    command: 'ovpn_getclient {{ openvpn_username }}'
-  register: ovpn_client_config_content
+    command: 'ovpn_getclient {{ item }}'
+  register: ovpn_client_configs_content
+  loop: '{{ openvpn_clients }}'
 
 - name: Stop a container
   docker_container:
@@ -49,25 +64,29 @@
 
 - name: Save client config content to file
   copy:
-    content: '{{ ovpn_client_config_content.container.Output }}'
-    dest: '{{ openvpn_username }}.ovpn'
+    content: '{{ item.container.Output }}'
+    dest: '{{ item.item }}.ovpn'
+  loop: '{{ ovpn_client_configs_content.results }}'
 
 - name: Copy ovpn client config to local machine
   ansible.posix.synchronize:
     mode: pull
     checksum: yes
-    src: '/home/{{ openvpn_username }}/{{ openvpn_username }}.ovpn'
+    src: '/home/{{ openvpn_username }}/{{ item }}.ovpn'
     dest: '{{ openvpn_config_save_path }}'
+  loop: '{{ openvpn_clients }}'
 
 - name: Start OpenVPN server process 
   docker_container:
     name: '{{ openvpn_container_name }}'
-    image: kylemanna/openvpn
+    image: '{{ openvpn_image_name }}'
     volumes:
       - '{{ openvpn_volume }}:/etc/openvpn'
     ports:
-      - 1194:1194
+      - 1194:1194/udp
     capabilities:
       - NET_ADMIN
     detach: yes
-    state: present
+    state: started
+    restart: yes
+
