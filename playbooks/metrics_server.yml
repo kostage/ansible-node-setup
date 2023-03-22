@@ -64,10 +64,6 @@
       vars:
         username: '{{ metrics_server.username }}'
     - import_role:
-        name: gantsign.golang
-      vars:
-        golang_gopath: '/home/{{ metrics_server.username }}/go'
-    - import_role:
         name: firewall
       vars:
         firewall_rules:
@@ -114,7 +110,7 @@
         prometheus_cosmos_validators: '{{ metrics_server.prometheus.cosmos_validators }}'
         prometheus_filesystem_avail_alert_percent: 5
         prometheus_inodes_avail_alert_percent: 5
-        prometheus_service_alert: "sui.service|node_exporter.service|cosmos_exporter.service|cosmovisor.service|kujira-price-feeder.service"
+        prometheus_service_alert: "node_exporter.service|cosmos_exporter.service|cosmovisor.service|kujira-price-feeder.service"
         prometheus_mem_avail_alert_percent: 5
         prometheus_wallet_tokens_low_alert_threshold: '{{ metrics_server.prometheus.wallet_tokens_low_alert_threshold }}'
 

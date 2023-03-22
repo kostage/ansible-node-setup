@@ -17,3 +17,4 @@ apt_packages:
   - unzip
   - tar
   - ca-certificates
+  - logrotate

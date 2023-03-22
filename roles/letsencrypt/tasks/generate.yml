@@ -1,5 +1,11 @@
 - block:
-    - name: 'Create required directories in {{ letsencrypt_dir }}'
+    - name: 'Cleanup artifacts from previous runs'
+      become: yes
+      file:
+        path: '{{ letsencrypt_dir }}'
+        state: absent
+
+    - name: 'Create required directory {{ letsencrypt_dir }} dir'
       become: yes
       file:
         path: '{{ item }}'
@@ -97,6 +103,3 @@
       service:
         name: apache2
         state: stopped
-
-  when:
-    - not __letsencrypt_fullchain_cert_file.stat.exists

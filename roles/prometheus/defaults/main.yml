@@ -7,3 +7,4 @@ prometheus_mem_avail_alert_percent: 10
 prometheus_service_alert: ""
 prometheus_delegated_token_notify_threshold: 10
 prometheus_wallet_tokens_low_alert_threshold: 3
+prometheus_missed_blocks_threshold: 3

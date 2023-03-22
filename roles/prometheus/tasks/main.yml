@@ -114,7 +114,7 @@
           description: '{% raw %}Wallet {{ $labels.address }} on {{ $labels.chain_id }} has only {{ $value }}{{ $labels.denom }}.{% endraw %}'
           summary: "Cosmos wallet balance low"
       - alert: MissedBlocksChanged
-        expr: "(\n round(delta(cosmos_validator_missed_blocks[5m])) > 0\n)"
+        expr: "(\n round(delta(cosmos_validator_missed_blocks[5m])) > {{ prometheus_missed_blocks_threshold }}\n)"
         for: 0m
         labels:
           severity: warning

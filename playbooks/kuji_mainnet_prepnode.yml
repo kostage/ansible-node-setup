@@ -149,6 +149,8 @@
   hosts: kuji_mainnet
   remote_user: "{{ kuji_mainnet.username }}"
   become: yes
+  vars:
+    - ansible_become_password: '{{ kuji_mainnet.password }}'
   tasks:
     - import_role:
         name: ssh

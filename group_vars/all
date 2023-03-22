@@ -32,6 +32,87 @@ kuji_mainnet:
     - rule: allow
       port: 7171
 
+lava_testnet:
+  username:  "{{ lookup('keepass', 'lava_testnet/node', 'username') }}"
+  password:  "{{ lookup('keepass', 'lava_testnet/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/LAVA/ssh'
+  tls_local_path: '/Users/kostage/Doroshenko/crypto/LAVA/tls'
+  tls_cert_name: 'server.crt'
+  tls_key_name: 'server.key'
+  tls_remote_path: '/etc/node_tls_cert'
+  ssh_port: 22
+  ip: "{{ lookup('keepass', 'lava_testnet/ip', 'password') }}"
+  firewall_rules:
+    - rule: allow
+      port: 9300
+      proto: tcp
+    - rule: allow
+      port: 9100
+      proto: tcp
+    - rule: allow
+      port: 7171
+      proto: tcp
+    - rule: allow
+      port: 26657
+      proto: tcp
+    - rule: allow
+      port: 26658
+      proto: tcp
+    - rule: allow
+      port: 26660
+      proto: tcp
+    - rule: allow
+      port: 26656
+      proto: tcp
+    - rule: allow
+      port: 6060
+      proto: tcp
+    - rule: allow
+      port: 1317
+      proto: tcp
+    - rule: allow
+      port: 9090
+      proto: tcp
+    - rule: allow
+      port: 9091
+      proto: tcp
+
+obol_testnet:
+  username:  "{{ lookup('keepass', 'obol_testnet/node', 'username') }}"
+  password:  "{{ lookup('keepass', 'obol_testnet/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/OBOL/ssh'
+  tls_local_path: '/Users/kostage/Doroshenko/crypto/OBOL/tls'
+  tls_cert_name: 'server.crt'
+  tls_key_name: 'server.key'
+  tls_remote_path: '/etc/node_tls_cert'
+  ssh_port: 22
+  ip: "{{ lookup('keepass', 'obol_testnet/ip', 'password') }}"
+  firewall_rules:
+    - rule: allow
+      port: 9300
+      proto: tcp
+    - rule: allow
+      port: 9100
+      proto: tcp
+
+obol_testnet2:
+  username:  "{{ lookup('keepass', 'obol_testnet2/node', 'username') }}"
+  password:  "{{ lookup('keepass', 'obol_testnet2/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/OBOL2/ssh'
+  tls_local_path: '/Users/kostage/Doroshenko/crypto/OBOL2/tls'
+  tls_cert_name: 'server.crt'
+  tls_key_name: 'server.key'
+  tls_remote_path: '/etc/node_tls_cert'
+  ssh_port: 22
+  ip: "{{ lookup('keepass', 'obol_testnet2/ip', 'password') }}"
+  firewall_rules:
+    - rule: allow
+      port: 9300
+      proto: tcp
+    - rule: allow
+      port: 9100
+      proto: tcp
+
 ovpn_server:
   username:  "{{ lookup('keepass', 'ovpn_server/node', 'username') }}"
   password:  "{{ lookup('keepass', 'ovpn_server/node', 'password') }}"
@@ -43,7 +124,7 @@ ovpn_server:
   tls_remote_path: '/etc/node_tls_cert'
   ovpn_config_save_path: '/Users/kostage/Doroshenko/crypto/OVPN'
   ip: "{{ lookup('keepass', 'ovpn_server/ip', 'password') }}"
-  clients: ['kostage', 'kostagemac', 'guest']
+  clients: ['kostage', 'kostagemac', 'guest', "genn_vpn_pc", "genn_vpn_mobile"]
   firewall_rules:
     - rule: allow
       port: 1194
@@ -82,6 +163,18 @@ metrics_server:
       - name: 'ovpn_server'
         password: "{{ lookup('keepass', 'ovpn_server/node', 'password') }}"
         ip: "{{ lookup('keepass', 'ovpn_server/ip', 'password') }}"
+
+      - name: 'lava_testnet'
+        password: "{{ lookup('keepass', 'lava_testnet/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'lava_testnet/ip', 'password') }}"
+
+      - name: 'obol_testnet'
+        password: "{{ lookup('keepass', 'obol_testnet/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'obol_testnet/ip', 'password') }}"
+
+      - name: 'obol_testnet2'
+        password: "{{ lookup('keepass', 'obol_testnet2/node', 'password') }}"
+        ip: "{{ lookup('keepass', 'obol_testnet2/ip', 'password') }}"
 
     # validators
     cosmos_validators:
