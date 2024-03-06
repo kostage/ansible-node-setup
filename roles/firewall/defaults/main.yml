@@ -1,4 +1,2 @@
 firewall_default_rules: []
-firewall_rules:
-  - rule: allow
-    port: 9100
+firewall_rules: []

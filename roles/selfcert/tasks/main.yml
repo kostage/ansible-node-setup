@@ -1,0 +1,13 @@
+- name: Install self-signed root cert to enable https to self-signed nodes
+  become: yes
+  copy:
+    src: '{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_cert_name }}'
+    dest: '/usr/local/share/ca-certificates'
+    owner: root
+    group: root
+    mode: 'u=rw,g=r,o=r'
+    force: yes
+
+- name: Update ca-certificates
+  become: yes
+  ansible.builtin.shell: update-ca-certificates

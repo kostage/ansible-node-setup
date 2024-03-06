@@ -1,0 +1,81 @@
+- name: Create user with password and ssh key
+  hosts: grafana
+  remote_user: root
+  tasks:
+    - import_role:
+        name: user
+  ignore_errors: yes
+  ignore_unreachable: yes
+
+- name: 'Tune SSH'
+  hosts: grafana
+  tasks:
+    - import_role:
+        name: ssh
+
+- name: 'Install packages'
+  hosts: grafana
+  tasks:
+    - import_role:
+        name: apt
+
+- name: 'Install docker'
+  hosts: grafana
+  tasks:
+    - import_role:
+        name: docker
+
+- name: 'Allow HTTP for letsencrypt challenge'
+  hosts: grafana
+  tasks:
+    - import_role:
+        name: firewall
+      vars:
+        firewall_rules:
+        - rule: allow
+          port: 80
+
+- name: 'Create letsencrypt cert'
+  hosts: grafana
+  tasks:
+    - import_role:
+        name: letsencrypt
+
+- name: 'Configure firewall'
+  hosts: grafana
+  tasks:
+    - import_role:
+        name: firewall
+
+- name: 'Install Node Exporter'
+  hosts: grafana
+  tasks:
+    - import_role:
+        name: cloudalchemy.node_exporter
+
+- name: Install root cert to allow prometheus scrape nodes
+  hosts: grafana
+  tasks:
+    - import_role:
+        name: selfcert
+
+- name: Install prometheus
+  hosts: grafana
+  vars:
+  tasks:
+    - import_role:
+        name: prometheus
+
+- name: Install grafana
+  hosts: grafana
+  vars:
+  tasks:
+    - import_role:
+        name: cloudalchemy.grafana
+
+- name: Install alertmanager
+  hosts: grafana
+  vars:
+  tasks:
+    - import_role:
+        name: cloudalchemy.alertmanager

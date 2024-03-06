@@ -4,8 +4,8 @@
   file:
     path: '{{ item }}'
     state: directory
-    owner: '{{ cosmovisor_user }}'
-    group: '{{ cosmovisor_user }}'
+    owner: '{{ user.name }}'
+    group: '{{ user.name }}'
     mode: u+rwX,g+rwX,o=rX
   with_items:
     - '{{ cosmovisor_daemon_home }}/cosmovisor/genesis/bin'
@@ -33,7 +33,7 @@
 - name: Build cosmovisor
   become: false
   environment:
-    PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/opt/go/1.18.2/bin:/home/{{ cosmovisor_user }}/go/bin'
+    PATH: '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/opt/go/1.19.5/bin:/home/{{ user.name }}/go/bin'
   make:
     chdir: '/tmp/cosmos-sdk/cosmovisor-{{ cosmovisor_version }}'
     target: build
@@ -44,8 +44,8 @@
     remote_src: yes
     src: '/tmp/cosmos-sdk/cosmovisor-{{ cosmovisor_version }}/build/cosmovisor'
     dest: '{{ cosmovisor_gobin }}/'
-    owner: '{{ cosmovisor_user }}'
-    group: '{{ cosmovisor_user }}'
+    owner: '{{ user.name }}'
+    group: '{{ user.name }}'
     mode: 'u=rwx,g=rwx,o=r'
 
 - name: Copy '{{ cosmovisor_daemon_name }}' to '{{ cosmovisor_daemon_home }}/cosmovisor/genesis/bin'
@@ -54,6 +54,6 @@
     remote_src: yes
     src: '{{ cosmovisor_gobin }}/{{ cosmovisor_daemon_name }}'
     dest: '{{ cosmovisor_daemon_home }}/cosmovisor/genesis/bin'
-    owner: '{{ cosmovisor_user }}'
-    group: '{{ cosmovisor_user }}'
+    owner: '{{ user.name }}'
+    group: '{{ user.name }}'
     mode: 'u=rwx,g=rwx,o=rx'

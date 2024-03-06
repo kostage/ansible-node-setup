@@ -5,8 +5,8 @@ Description=cosmovisor
 After=network-online.target
 
 [Service]
-User={{ cosmovisor_user }}
-ExecStart=/home/{{ cosmovisor_user }}/go/bin/cosmovisor start
+User={{ user.name }}
+ExecStart=/home/{{ user.name }}/go/bin/cosmovisor start
 Restart=always
 RestartSec=3
 LimitNOFILE=4096

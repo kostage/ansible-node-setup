@@ -1,14 +1,17 @@
 ---
 - name: install package
+  become: yes
   apt:
     pkg=ufw
     state=present
 
 - name: reset
+  become: yes
   ufw:
     state=reset
 
 - name: configure rules
+  become: yes
   ufw:
     name="{{ item.name | default(omit) }}"
     rule="{{ item.rule }}"
@@ -23,6 +26,7 @@
     - "{{ firewall_rules }}"
 
 - name: enable
+  become: yes
   ufw:
     logging=on
     state=enabled

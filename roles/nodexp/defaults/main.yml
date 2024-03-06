@@ -1,9 +1,0 @@
-
-nodexp_tls: yes
-nodexp_config:
-  security:
-    path: '/etc/node_exporter'
-    localpath: 'undefined'
-    cert_file: 'server.crt'
-    key_file: 'server.key'
-    password: 'undefined'

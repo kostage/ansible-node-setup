@@ -1,10 +1,12 @@
 ---
 - name: update cache
+  become: yes
   apt:
     update_cache: yes
     cache_valid_time: '{{ cache_valid_time | int }}'
 
 - name: install additional packages
+  become: yes
   package:
     pkg: '{{ item }}'
     state: present

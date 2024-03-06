@@ -2,6 +2,7 @@
   become: no
 
 - import_role:
+  become: yes
     name: cloudalchemy.grafana
   vars:
     grafana_security:

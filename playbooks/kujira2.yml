@@ -1,0 +1,98 @@
+- name: Create user with password and ssh key
+  hosts: kujira2
+  remote_user: root
+  tasks:
+    - import_role:
+        name: user
+  ignore_errors: yes
+  ignore_unreachable: yes
+
+- name: 'Tune SSH'
+  hosts: kujira2
+  tasks:
+    - import_role:
+        name: ssh
+
+- name: 'Install packages'
+  hosts: kujira2
+  tasks:
+    - import_role:
+        name: apt
+
+- name: 'Configure firewall'
+  hosts: kujira2
+  tasks:
+    - import_role:
+        name: firewall
+
+- name: Generate TLS cert
+  hosts: localhost
+  connection: local
+  tasks:
+    - import_role:
+        name: tlsgen
+      vars:
+        tlsgen_common_name: '{{ tlsgen_common_name }}' # fixit
+        tlsgen_sans: '{{ tlsgen_sans }}' # fixit
+
+- name: Create node TLS dir
+  hosts: kujira2
+  become: yes
+  tasks:
+    - file:
+        path: '{{ tlsgen_remote_path }}'
+        state: directory
+        owner: root
+        group: root
+        mode: 'u=rwx,g=rwx,o=rx'
+
+- name: Transfer TLS files to remote
+  hosts: kujira2
+  become: yes
+  tasks:
+    - copy:
+        src: '{{ item }}'
+        dest: '{{ tlsgen_remote_path }}'
+        owner: root
+        group: root
+        mode: 'u=rw,g=rw,o=r'
+        force: yes
+      with_items:
+        - '{{ tlsgen_path }}/{{ tlsgen_cert_name }}'
+        - '{{ tlsgen_path }}/{{ tlsgen_key_name }}'
+
+- name: 'Install Node Exporter'
+  hosts: kujira2
+  tasks:
+    - import_role:
+        name: cloudalchemy.node_exporter
+
+- name: Install golang
+  hosts: kujira2
+  tasks:
+    - import_role:
+        name: gantsign.golang
+      vars:
+        golang_gopath: '/home/{{ user.name }}/go'
+
+- name: Install Cosmos Exporter
+  hosts: kujira2
+  tasks:
+    - import_role:
+        name: cosmosexp
+
+- name: Install Cosmovisor
+  hosts: kujira2
+  tasks:
+    - import_role:
+        name: cosmovisor
+
+- name: Switch SSH To Alternate Port
+  hosts: kujira2
+  tasks:
+    - import_role:
+        name: ssh
+      vars:
+        sshd_options:
+          - option: Port
+            value: "{{ ssh_port }}"

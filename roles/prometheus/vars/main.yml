@@ -1,0 +1,7 @@
+prometheus_nodes: '{{ prometheus.nodes }}'
+prometheus_cosmos_validators: '{{ prometheus.cosmos_validators }}'
+prometheus_filesystem_avail_alert_percent: 5
+prometheus_inodes_avail_alert_percent: 5
+prometheus_service_alert: "node_exporter.service|cosmos_exporter.service|cosmovisor.service|kujira-price-feeder.service"
+prometheus_mem_avail_alert_percent: 5
+prometheus_wallet_tokens_low_alert_threshold: '{{ prometheus.wallet_tokens_low_alert_threshold }}'

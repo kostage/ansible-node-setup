@@ -1,0 +1,65 @@
+---
+ssh_port: 22
+nodexp_tls: no
+
+remote_user: "{{ lookup('keepass', 'metrics/grafana_password', 'username') }}"
+ansible_become_password: "{{ lookup('keepass', 'metrics/grafana_password', 'password') }}"
+
+user:
+  name: "{{ lookup('keepass', 'metrics/grafana_password', 'username') }}"
+  password: "{{ lookup('keepass', 'metrics/grafana_password', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/METRICS/ssh'
+  email: "{{ lookup('keepass', 'metrics/email', 'password') }}"
+
+letsencrypt:
+  domain_name: "{{ lookup('keepass', 'metrics/domain_name', 'username') }}"
+  cert_dir: '/etc/letsencrypt'
+  email: "{{ lookup('keepass', 'metrics/email', 'password') }}"
+
+prometheus:
+  wallet_tokens_low_alert_threshold: '0.9'
+  # nodes
+  nodes:
+    - name: 'kuji_mainnet_node'
+      password: "{{ lookup('keepass', 'kuji_mainnet_2/node', 'password') }}"
+      ip: "{{ lookup('keepass', 'kuji_mainnet_2/ip', 'password') }}"
+
+  # validators
+  cosmos_validators:
+    - name: "{{ lookup('keepass', 'kuji_mainnet_2/node', 'username') }}_kuji_mainnet"
+      password: "{{ lookup('keepass', 'kuji_mainnet_2/node', 'password') }}"
+      ip: "{{ lookup('keepass', 'kuji_mainnet_2/ip', 'password') }}"
+      valoper: "{{ lookup('keepass', 'kuji_mainnet_2/valoper', 'password') }}"
+      wallet: "{{ lookup('keepass', 'kuji_mainnet_2/wallet', 'password') }}"
+      price_feeder_wallet: "{{ lookup('keepass', 'kuji_mainnet_2/price_feeder_wallet', 'password') }}"
+
+alertmanager_version: latest
+alertmanager_receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - api_url: 'https://api.telegram.org'
+        bot_token: "{{ lookup('keepass', 'telegram_bot/token', 'password') }}"
+        chat_id: "{{ telegram_chat_id }}" # take from inventory due to weird integer var behavior
+        disable_notifications: false
+        http_config:
+          follow_redirects: true
+        send_resolved: true
+        parse_mode: HTML
+alertmanager_route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+  receiver: 'telegram'
+
+grafana_security:
+  admin_user: "{{ lookup('keepass', 'metrics/grafana_password', 'username') }}"
+  admin_password: "{{ lookup('keepass', 'metrics/grafana_password', 'password') }}"
+grafana_server:
+  protocol: https
+  cert_file: "/etc/letsencrypt/{{ lookup('keepass', 'metrics/domain_name', 'username') }}-fullchain.crt"
+  cert_key: "/etc/letsencrypt/{{ lookup('keepass', 'metrics/domain_name', 'username') }}.key"
+
+firewall_rules:
+- rule: allow
+  port: 3000
