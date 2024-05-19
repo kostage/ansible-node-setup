@@ -23,6 +23,9 @@ prometheus:
     - name: 'kuji_mainnet_node'
       password: "{{ lookup('keepass', 'kuji_mainnet_2/node', 'password') }}"
       ip: "{{ lookup('keepass', 'kuji_mainnet_2/ip', 'password') }}"
+    # - name: 'extra_vpn'
+    #   password: "{{ lookup('keepass', 'extra_vpn/node', 'password') }}"
+    #   ip: "{{ lookup('keepass', 'extra_vpn/ip', 'password') }}"
 
   # validators
   cosmos_validators:
@@ -63,3 +66,5 @@ grafana_server:
 firewall_rules:
 - rule: allow
   port: 3000
+- rule: allow
+  port: 8388

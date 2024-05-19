@@ -1,0 +1,27 @@
+---
+ssh_port: 22
+nodexp_tls: yes
+
+remote_user: "{{ lookup('keepass', 'extra_vpn/node', 'username') }}"
+ansible_become_password: "{{ lookup('keepass', 'extra_vpn/node', 'password') }}"
+
+user:
+  name: "{{ lookup('keepass', 'extra_vpn/node', 'username') }}"
+  password: "{{ lookup('keepass', 'extra_vpn/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/EXTRA_VPN/ssh'
+
+tlsgen_common_name: "{{ lookup('keepass', 'extra_vpn/ip', 'password') }}"
+tlsgen_sans:
+  - "IP:{{ lookup('keepass', 'extra_vpn/ip', 'password') }}"
+
+node_exporter_tls_server_config:
+  cert_file: '{{ tlsgen_remote_path }}/{{ tlsgen_cert_name }}'
+  key_file: '{{ tlsgen_remote_path }}/{{ tlsgen_key_name }}'
+node_exporter_basic_auth_users:
+  prometheus: "{{ lookup('keepass', 'extra_vpn/node', 'password') }}"
+
+firewall_rules:
+- rule: allow
+  port: 8388
+  - rule: allow
+    port: 9100 # nodexp
