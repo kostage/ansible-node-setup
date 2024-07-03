@@ -1,78 +1,78 @@
-# - name: Create user with password and ssh key
-#   hosts: grafana
-#   remote_user: root
-#   tasks:
-#     - name: 'Install rsync on remote'
-#       ansible.builtin.import_role:
-#         name: apt
-#       vars:
-#         apt_packages:
-#           - rsync
-#     - name: 'Create user'
-#       ansible.builtin.import_role:
-#         name: user
-#   ignore_errors: true
-#   ignore_unreachable: true
+- name: Create user with password and ssh key
+  hosts: grafana
+  remote_user: root
+  tasks:
+    - name: 'Install rsync on remote'
+      ansible.builtin.import_role:
+        name: apt
+      vars:
+        apt_packages:
+          - rsync
+    - name: 'Create user'
+      ansible.builtin.import_role:
+        name: user
+  ignore_errors: true
+  ignore_unreachable: true
 
-# - name: 'Install packages'
-#   hosts: grafana
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: apt
+- name: 'Install packages'
+  hosts: grafana
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: apt
 
-# - name: 'Install docker'
-#   hosts: grafana
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: docker
+- name: 'Install docker'
+  hosts: grafana
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: docker
 
-# - name: 'Allow HTTP for letsencrypt challenge'
-#   hosts: grafana
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import firewall role'
-#       ansible.builtin.import_role:
-#         name: firewall
-#   vars:
-#     firewall_rules:
-#       - rule: allow
-#         port: 80
+- name: 'Allow HTTP for letsencrypt challenge'
+  hosts: grafana
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import firewall role'
+      ansible.builtin.import_role:
+        name: firewall
+  vars:
+    firewall_rules:
+      - rule: allow
+        port: 80
 
-# - name: 'Create letsencrypt cert'
-#   hosts: grafana
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import letsencrypt role'
-#       ansible.builtin.import_role:
-#         name: letsencrypt
+- name: 'Create letsencrypt cert'
+  hosts: grafana
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import letsencrypt role'
+      ansible.builtin.import_role:
+        name: letsencrypt
 
-# - name: 'Install Node Exporter'
-#   hosts: grafana
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import node_exporter role'
-#       ansible.builtin.import_role:
-#         name: prometheus.prometheus.node_exporter
+- name: 'Install Node Exporter'
+  hosts: grafana
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import node_exporter role'
+      ansible.builtin.import_role:
+        name: prometheus.prometheus.node_exporter
 
-# - name: Install root cert to allow prometheus scrape nodes
-#   hosts: grafana
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: selfcert
+- name: Install root cert to allow prometheus scrape nodes
+  hosts: grafana
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: selfcert
 
-# - name: Install prometheus
-#   hosts: grafana
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: prometheus
+- name: Install prometheus
+  hosts: grafana
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: prometheus
 
 - name: Install grafana
   hosts: grafana
