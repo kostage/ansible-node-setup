@@ -23,7 +23,7 @@
     volumes:
       - '{{ openvpn_volume }}:/etc/openvpn'
     command: 'ovpn_initpki'
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Stop a container
   docker_container:
@@ -39,7 +39,7 @@
       - '{{ openvpn_volume }}:/etc/openvpn'
     command: 'easyrsa build-client-full {{ item }} nopass'
   loop: '{{ openvpn_clients }}'
-  ignore_errors: yes
+  ignore_errors: true
 
 - name: Stop a container
   docker_container:
@@ -63,7 +63,7 @@
     state: absent
 
 - name: Save client config content to file
-  copy:
+  ansible.builtin.copy:
     content: '{{ item.container.Output }}'
     dest: '{{ item.item }}.ovpn'
   loop: '{{ ovpn_client_configs_content.results }}'
@@ -71,7 +71,7 @@
 - name: Copy ovpn client config to local machine
   ansible.posix.synchronize:
     mode: pull
-    checksum: yes
+    checksum: true
     src: '/home/{{ openvpn_username }}/{{ item }}.ovpn'
     dest: '{{ openvpn_config_save_path }}'
   loop: '{{ openvpn_clients }}'
@@ -86,7 +86,6 @@
       - 1194:1194/udp
     capabilities:
       - NET_ADMIN
-    detach: yes
+    detach: true
     state: started
-    restart: yes
-
+    restart: true

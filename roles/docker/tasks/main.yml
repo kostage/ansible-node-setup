@@ -1,13 +1,13 @@
 - name: Install aptitude
-  become: yes
-  apt:
+  become: true
+  ansible.builtin.apt:
     name: aptitude
     state: latest
     update_cache: true
 
 - name: Install required system packages
-  become: yes
-  apt:
+  become: true
+  ansible.builtin.apt:
     pkg:
       - apt-transport-https
       - ca-certificates
@@ -20,48 +20,48 @@
     update_cache: true
 
 - name: Add Docker GPG apt Key
-  become: yes
-  apt_key:
+  become: true
+  ansible.builtin.apt_key:
     url: https://download.docker.com/linux/ubuntu/gpg
     state: present
 
 - name: Add Docker Repository
-  become: yes
-  apt_repository:
+  become: true
+  ansible.builtin.apt_repository:
     repo: deb https://download.docker.com/linux/ubuntu focal stable
     state: present
 
 - name: Update apt and install docker-ce
-  become: yes
-  apt:
+  become: true
+  ansible.builtin.apt:
     name: docker-ce
     state: latest
     update_cache: true
 
 - name: Install docker-compose
-  become: yes
-  apt:
+  become: true
+  ansible.builtin.apt:
     name: docker-compose
     state: latest
     update_cache: true
 
 # sudo groupadd docker
 - name: Create "docker" group
-  become: yes
-  group:
+  become: true
+  ansible.builtin.group:
     name: docker
     state: present
 
 # sudo usermod -aG docker root
-- name: Add remote "{{ docker_user }}" user to "docker" group
-  become: yes
-  user:
+- name: Add remote user to "docker" group
+  become: true
+  ansible.builtin.user:
     name: "{{ user.name }}"
-    group: docker
-    append: yes
+    groups: docker
+    append: true
 
 - name: Ensure docker deamon is running
-  become: yes
-  service:
+  become: true
+  ansible.builtin.service:
     name: docker
     state: started

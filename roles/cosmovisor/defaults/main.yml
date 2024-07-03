@@ -1,4 +1,0 @@
----
-cosmovisor_version: 'v0.45.6'
-cosmovisor_restart: no
-cosmovisor_gobin: '/home/{{ user.name }}/go/bin'

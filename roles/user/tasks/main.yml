@@ -3,18 +3,24 @@
   ansible.builtin.user:
     name: '{{ user.name }}'
     password: "{{ user.password | password_hash('sha512') }}"
-    generate_ssh_key: yes
+    generate_ssh_key: true
     ssh_key_file: '.ssh/{{ user.name }}_id_rsa'
     groups: "sudo"
-    append: yes
+    append: true
     state: present
     shell: /bin/bash
     update_password: always
 
+- name: Create backup folder
+  local_action:
+    module: file
+    path: "{{ user.sshkey_save_path }}/"
+    state: directory
+
 - name: Copy keys to local machine
   ansible.posix.synchronize:
     mode: pull
-    checksum: yes
+    checksum: true
     src: "/home/{{ user.name }}/.ssh/"
     dest: "{{ user.sshkey_save_path }}/"
 

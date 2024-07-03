@@ -1,7 +1,7 @@
 ssh_sshd_config: '/etc/ssh/sshd_config'
 ssh_authorized_keys_file: '.ssh/authorized_keys'
 
-sshd_options:
+ssh_options:
   - option: 'UsePAM'
     value: 'no'
   - option: 'PasswordAuthentication'

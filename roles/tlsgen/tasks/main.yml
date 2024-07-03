@@ -13,7 +13,7 @@
     use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
     basic_constraints:
       - 'CA:TRUE'
-    basic_constraints_critical: yes
+    basic_constraints_critical: true
     key_usage:
       - keyCertSign
     key_usage_critical: true
@@ -29,12 +29,18 @@
     provider: selfsigned
   when: tlsgen_ca_create
 
+- name: Clean tls files directory
+  ansible.builtin.file:
+    path: "{{ tlsgen_path }}"
+    state: absent
+    mode: 0o700
+
 - name: Create tls files directory
-  file:
+  ansible.builtin.file:
     path: "{{ tlsgen_path }}"
     state: directory
-    mode: 0775
-    recurse: yes
+    mode: 0o700
+    recurse: true
 
 - name: Create private key for new certificate for server
   community.crypto.openssl_privatekey:

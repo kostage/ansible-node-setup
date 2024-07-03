@@ -1,8 +1,7 @@
 ---
 ssh_port: 32666
-nodexp_tls: yes
+nodexp_tls: true
 
-remote_user: "{{ lookup('keepass', 'kuji_mainnet_2/node', 'username') }}"
 ansible_become_password: "{{ lookup('keepass', 'kuji_mainnet_2/node', 'password') }}"
 
 user:

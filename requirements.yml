@@ -1,7 +1,7 @@
-# - src: cloudalchemy.node_exporter
-# - src: cloudalchemy.grafana 
-# - src: cloudalchemy.prometheus
 ---
 collections:
   - ansible.posix
   - community.general
+  - community.crypto
+  - prometheus.prometheus
+  - grafana.grafana

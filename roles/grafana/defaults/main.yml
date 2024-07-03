@@ -1,5 +1,0 @@
-grafana_security_config:
-  path: '/etc/grafana_tls'
-  cert_file: 'macgen.crt'
-  key_file: 'macgen.key'
-  username: 'kostage'

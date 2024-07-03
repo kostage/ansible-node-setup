@@ -1,6 +1,0 @@
-grafana_security_config:
-  tls_path: '{{ grafana.cert_dir }}'
-  cert_file: '{{ grafana.domain_name }}-fullchain.crt'
-  key_file: '{{ grafana.domain_name }}.key'
-  username: '{{ user.name }}'
-  password: '{{ user.password }}'

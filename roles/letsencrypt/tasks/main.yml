@@ -1,3 +1,108 @@
----
-- import_tasks: generate.yml
-  become: yes
+- block:
+    - name: 'Cleanup artifacts from previous runs'
+      become: true
+      ansible.builtin.file:
+        path: '{{ letsencrypt.cert_dir }}'
+        state: absent
+
+    - name: 'Create required directory {{ letsencrypt.cert_dir }}'
+      become: true
+      ansible.builtin.file:
+        path: '{{ item }}'
+        state: directory
+        owner: root
+        group: root
+        mode: 'u=rwx,g=x,o=x'
+      with_items:
+        - '{{ letsencrypt.cert_dir }}'
+
+    - name: 'Install apache2'
+      become: true
+      ansible.builtin.apt: name=apache2 update_cache=yes state=latest
+
+    - name: 'Start apache2'
+      become: true
+      ansible.builtin.service:
+        name: apache2
+        state: started
+
+    - name: "Generate a Let's Encrypt account key"
+      become: true
+      ansible.builtin.shell: 'if [ ! -f {{ letsencrypt.cert_dir }}/account.key ]; then openssl genrsa 4096 | tee {{ letsencrypt.cert_dir }}/account.key; fi'
+      args:
+        executable: /bin/bash
+
+    - name: "Generate Let's Encrypt private key"
+      become: true
+      ansible.builtin.shell: 'openssl genrsa 4096 | tee {{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}.key'
+      args:
+        executable: /bin/bash
+
+    - name: "Generate Let's Encrypt CSR"
+      become: true
+      ansible.builtin.shell: "openssl req -new -sha256 -key {{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}.key -subj '/CN={{ letsencrypt.domain_name }}' -reqexts SAN -config <(cat /etc/ssl/openssl.cnf <(printf '\n[SAN]\nsubjectAltName=DNS:{{ letsencrypt.domain_name }},DNS:www.{{ letsencrypt.domain_name }}')) | tee {{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}.csr"
+      args:
+        executable: /bin/bash
+
+    - name: 'Create a challenge for {{ letsencrypt.domain_name }} using an account key'
+      become: true
+      community.crypto.acme_certificate:
+        account_key_src:  '{{ letsencrypt.cert_dir }}/account.key'
+        account_email: '{{ letsencrypt.email }}'
+        force: true
+        challenge: http-01
+        csr: '{{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}.csr'
+        dest: '{{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}.crt'
+        fullchain_dest: '{{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}-fullchain.crt'
+        acme_directory: 'https://acme-v02.api.letsencrypt.org/directory'
+        acme_version: 2
+        terms_agreed: true
+      register: acme_challenge
+
+    - name: "Create .well-known/acme-challenge directory"
+      become: true
+      ansible.builtin.file:
+        path: /var/www/html/.well-known/acme-challenge
+        state: directory
+        owner: root
+        group: root
+        mode: u=rwx,g=rx,o=rx
+
+    - name: "Implement http-01 challenge files"
+      become: true
+      ansible.builtin.copy:
+        content: "{{ acme_challenge['challenge_data'][item]['http-01']['resource_value'] }}"
+        dest: "/var/www/html/{{ acme_challenge['challenge_data'][item]['http-01']['resource'] }}"
+        owner: root
+        group: root
+        mode: u=rw,g=r,o=r
+      with_items:
+        - '{{ letsencrypt.domain_name }}'
+        - 'www.{{ letsencrypt.domain_name }}'
+
+    - name: 'Restart apache2'
+      become: true
+      ansible.builtin.service:
+        name: apache2
+        state: restarted
+
+    - name: "Complete Let's Encrypt challenges"
+      become: true
+      community.crypto.acme_certificate:
+        acme_directory: 'https://acme-v02.api.letsencrypt.org/directory'
+        acme_version: 2
+        account_key_src: '{{ letsencrypt.cert_dir }}/account.key'
+        account_email: '{{ letsencrypt.email }}'
+        force: true
+        challenge: http-01
+        csr: '{{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}.csr'
+        dest: '{{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}.crt'
+        chain_dest: '{{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}-chain.crt'
+        fullchain_dest: '{{ letsencrypt.cert_dir }}/{{ letsencrypt.domain_name }}-fullchain.crt'
+        data: '{{ acme_challenge }}'
+
+    - name: 'Stop apache2'
+      become: true
+      ansible.builtin.service:
+        name: apache2
+        state: stopped

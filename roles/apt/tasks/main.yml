@@ -1,14 +1,14 @@
 ---
-- name: update cache
-  become: yes
-  apt:
-    update_cache: yes
-    cache_valid_time: '{{ cache_valid_time | int }}'
+- name: Update cache
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: '{{ apt_cache_valid_time | int }}'
 
-- name: install additional packages
-  become: yes
-  package:
+- name: Install additional packages
+  become: true
+  ansible.builtin.package:
     pkg: '{{ item }}'
     state: present
   with_items:
-  - "{{ apt_packages }}"
+    - "{{ apt_packages }}"

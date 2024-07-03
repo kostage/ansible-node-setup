@@ -4,8 +4,8 @@
   tasks:
     - import_role:
         name: user
-  ignore_errors: yes
-  ignore_unreachable: yes
+  ignore_errors: true
+  ignore_unreachable: true
 
 - name: 'Tune SSH'
   hosts: kujira2
@@ -37,7 +37,7 @@
 
 - name: Create node TLS dir
   hosts: kujira2
-  become: yes
+  become: true
   tasks:
     - file:
         path: '{{ tlsgen_remote_path }}'
@@ -48,15 +48,15 @@
 
 - name: Transfer TLS files to remote
   hosts: kujira2
-  become: yes
+  become: true
   tasks:
-    - copy:
+    - ansible.builtin.copy:
         src: '{{ item }}'
         dest: '{{ tlsgen_remote_path }}'
         owner: root
         group: root
         mode: 'u=rw,g=rw,o=r'
-        force: yes
+        force: true
       with_items:
         - '{{ tlsgen_path }}/{{ tlsgen_cert_name }}'
         - '{{ tlsgen_path }}/{{ tlsgen_key_name }}'
@@ -93,6 +93,6 @@
     - import_role:
         name: ssh
       vars:
-        sshd_options:
+        ssh_options:
           - option: Port
             value: "{{ ssh_port }}"
