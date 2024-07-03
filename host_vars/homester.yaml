@@ -1,0 +1,32 @@
+---
+ssh_port: 22
+
+ansible_become_password: "{{ lookup('keepass', 'homester/node', 'password') }}"
+
+user:
+  name: "{{ lookup('keepass', 'homester/node', 'username') }}"
+  password: "{{ lookup('keepass', 'homester/node', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/crypto/homester/ssh'
+
+tlsgen_common_name: "{{ lookup('keepass', 'homester/ip', 'password') }}"
+tlsgen_sans:
+  - "IP:{{ lookup('keepass', 'homester/ip', 'password') }}"
+
+node_exporter_tls_server_config:
+  cert_file: '{{ tlsgen_remote_path }}/{{ tlsgen_cert_name }}'
+  key_file: '{{ tlsgen_remote_path }}/{{ tlsgen_key_name }}'
+node_exporter_basic_auth_users:
+  prometheus: "{{ lookup('keepass', 'homester/node', 'password') }}"
+
+firewall_rules:
+  - rule: allow
+    port: 8388
+  - rule: allow
+    port: 9100 # nodexp
+  # - rule: allow
+  #   port: 80
+
+letsencrypt:
+  domain_name: "{{ lookup('keepass', 'homester/domain_name', 'username') }}"
+  cert_dir: '/etc/letsencrypt'
+  email: "{{ lookup('keepass', 'homester/email', 'password') }}"

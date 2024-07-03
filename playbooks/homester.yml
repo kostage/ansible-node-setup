@@ -1,0 +1,117 @@
+- name: Create user with password and ssh key
+  hosts: homester
+  remote_user: root
+  tasks:
+    - name: 'Install rsync on remote'
+      ansible.builtin.import_role:
+        name: apt
+      vars:
+        apt_packages:
+          - rsync
+    - name: 'Create user'
+      ansible.builtin.import_role:
+        name: user
+  ignore_errors: true
+  ignore_unreachable: true
+
+- name: 'Install packages'
+  hosts: homester
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: apt
+
+- name: 'Install docker'
+  hosts: homester
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: docker
+
+# !!! tlsgen_common_name is defined for 'homester' and is not defined for localhost!
+- name: Generate TLS cert
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: tlsgen
+      vars:
+        tlsgen_common_name: '0.0.0.0' # fixit
+        tlsgen_sans: 'IP:0.0.0.0' # fixit
+
+- name: Create node TLS dir
+  hosts: homester
+  remote_user: "{{ user.name }}"
+  become: true
+  tasks:
+    - name: 'File'
+      ansible.builtin.file:
+        path: '{{ tlsgen_remote_path }}'
+        state: directory
+        owner: root
+        group: root
+        mode: 'u=rwx,g=rwx,o=rx'
+
+- name: Transfer TLS files to remote
+  hosts: homester
+  remote_user: "{{ user.name }}"
+  become: true
+  tasks:
+    - name: 'Copy'
+      ansible.builtin.copy:
+        src: '{{ item }}'
+        dest: '{{ tlsgen_remote_path }}'
+        owner: root
+        group: root
+        mode: 'u=rw,g=rw,o=r'
+        force: true
+      with_items:
+        - '{{ tlsgen_path }}/{{ tlsgen_cert_name }}'
+        - '{{ tlsgen_path }}/{{ tlsgen_key_name }}'
+
+- name: 'Allow HTTP for letsencrypt challenge'
+  hosts: homester
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import firewall role'
+      ansible.builtin.import_role:
+        name: firewall
+  vars:
+    firewall_rules:
+      - rule: allow
+        port: 80
+
+- name: 'Create letsencrypt cert'
+  hosts: homester
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import letsencrypt role'
+      ansible.builtin.import_role:
+        name: letsencrypt
+
+- name: 'Install Node Exporter'
+  hosts: homester
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import node_exporter role'
+      ansible.builtin.import_role:
+        name: prometheus.prometheus.node_exporter
+
+- name: 'Tune SSH'
+  hosts: homester
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: ssh
+
+- name: 'Configure firewall'
+  hosts: homester
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: firewall
