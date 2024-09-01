@@ -7,6 +7,7 @@ user:
   name: "{{ lookup('keepass', 'homester/node', 'username') }}"
   password: "{{ lookup('keepass', 'homester/node', 'password') }}"
   sshkey_save_path: '/Users/kostage/Doroshenko/crypto/homester/ssh'
+  ssh_key_type: ed25519
 
 tlsgen_common_name: "{{ lookup('keepass', 'homester/ip', 'password') }}"
 tlsgen_sans:

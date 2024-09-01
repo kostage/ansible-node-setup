@@ -17,9 +17,6 @@ letsencrypt:
 prometheus:
   # nodes
   nodes:
-    - name: 'kuji_mainnet_node'
-      password: "{{ lookup('keepass', 'kuji_mainnet_2/node', 'password') }}"
-      ip: "{{ lookup('keepass', 'kuji_mainnet_2/ip', 'password') }}"
     - name: 'homester'
       password: "{{ lookup('keepass', 'homester/node', 'password') }}"
       ip: "{{ lookup('keepass', 'homester/ip', 'password') }}"

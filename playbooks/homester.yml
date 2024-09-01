@@ -11,6 +11,8 @@
     - name: 'Create user'
       ansible.builtin.import_role:
         name: user
+      vars:
+        user_ssh_key_type: '{{ user.ssh_key_type }}'
   ignore_errors: true
   ignore_unreachable: true
 

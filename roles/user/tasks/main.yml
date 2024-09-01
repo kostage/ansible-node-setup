@@ -5,6 +5,7 @@
     password: "{{ user.password | password_hash('sha512') }}"
     generate_ssh_key: true
     ssh_key_file: '.ssh/{{ user.name }}_id_rsa'
+    ssh_key_type: '{{ user_ssh_key_type }}'
     groups: "sudo"
     append: true
     state: present

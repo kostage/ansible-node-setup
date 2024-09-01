@@ -4,16 +4,9 @@ apt_cache_valid_time: 3600
 apt_packages:
   - sudo
   - wget
-  # - curl
-  # - tmux
-  # - build-essential
-  # - make
-  # - git
-  # - unzip
+  - unzip
   - htop
   - mc
-  # - jq
-  # - bc
   - unzip
   - tar
   - ca-certificates

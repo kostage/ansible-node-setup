@@ -5,3 +5,4 @@ collections:
   - community.crypto
   - prometheus.prometheus
   - grafana.grafana
+  - viczem.keepass
