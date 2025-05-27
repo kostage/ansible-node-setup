@@ -9,3 +9,6 @@ __pycache__/
 
 inventory
 hosts.yml
+
+roles/geerlingguy.*
+roles/nginxinc.*

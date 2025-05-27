@@ -22,13 +22,13 @@
       ansible.builtin.import_role:
         name: apt
 
-- name: 'Install docker'
-  hosts: grafana
-  remote_user: "{{ user.name }}"
-  tasks:
-    - name: 'Import role'
-      ansible.builtin.import_role:
-        name: docker
+# - name: 'Install docker'
+#   hosts: grafana
+#   remote_user: "{{ user.name }}"
+#   tasks:
+#     - name: 'Import role'
+#       ansible.builtin.import_role:
+#         name: docker
 
 - name: 'Allow HTTP for letsencrypt challenge'
   hosts: grafana
@@ -104,3 +104,18 @@
     - name: 'Import role'
       ansible.builtin.import_role:
         name: firewall
+
+- name: Install NGINX
+  hosts: grafana
+  become: true
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: nginxinc.nginx_config
+
+- name: 'Certbot'
+  hosts: grafana
+  become: true
+  roles:
+    - geerlingguy.certbot

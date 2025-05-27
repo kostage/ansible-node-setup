@@ -1,4 +1,9 @@
 ---
+roles:
+  - name: geerlingguy.java
+  - name: nginxinc.nginx
+  - name: nginxinc.nginx_config
+
 collections:
   - ansible.posix
   - community.general
@@ -6,3 +11,7 @@ collections:
   - prometheus.prometheus
   - grafana.grafana
   - viczem.keepass
+  - name: ansible.posix
+    version: 1.5.4
+  - name: community.general
+    version: 9.2.0

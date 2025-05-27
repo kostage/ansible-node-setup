@@ -24,15 +24,14 @@
       ansible.builtin.import_role:
         name: apt
 
-- name: 'Install docker'
-  hosts: homester
-  remote_user: "{{ user.name }}"
-  tasks:
-    - name: 'Import role'
-      ansible.builtin.import_role:
-        name: docker
+# - name: 'Install docker'
+#   hosts: homester
+#   remote_user: "{{ user.name }}"
+#   tasks:
+#     - name: 'Import role'
+#       ansible.builtin.import_role:
+#         name: docker
 
-# !!! tlsgen_common_name is defined for 'homester' and is not defined for localhost!
 - name: Generate TLS cert
   hosts: localhost
   connection: local
@@ -41,8 +40,8 @@
       ansible.builtin.import_role:
         name: tlsgen
       vars:
-        tlsgen_common_name: '0.0.0.0' # fixit
-        tlsgen_sans: 'IP:0.0.0.0' # fixit
+        tlsgen_common_name: "{{ hostvars['homester'].tlsgen_common_name }}"
+        tlsgen_sans: "{{ hostvars['homester'].tlsgen_sans }}"
 
 - name: Create node TLS dir
   hosts: homester
@@ -73,26 +72,6 @@
       with_items:
         - '{{ tlsgen_path }}/{{ tlsgen_cert_name }}'
         - '{{ tlsgen_path }}/{{ tlsgen_key_name }}'
-
-- name: 'Allow HTTP for letsencrypt challenge'
-  hosts: homester
-  remote_user: "{{ user.name }}"
-  tasks:
-    - name: 'Import firewall role'
-      ansible.builtin.import_role:
-        name: firewall
-  vars:
-    firewall_rules:
-      - rule: allow
-        port: 80
-
-- name: 'Create letsencrypt cert'
-  hosts: homester
-  remote_user: "{{ user.name }}"
-  tasks:
-    - name: 'Import letsencrypt role'
-      ansible.builtin.import_role:
-        name: letsencrypt
 
 - name: 'Install Node Exporter'
   hosts: homester

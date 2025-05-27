@@ -16,6 +16,8 @@ ansible-galaxy install -r requirements.yml
 ### localhost
 ```bash
 brew install gnu-tar
+cp ~/.ansible/collections/ansible_collections/viczem/keepass/plugins/lookup/keepass.py ~/.ansible/plugins/lookup
+
 ```
 
 ```bash

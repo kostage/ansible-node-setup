@@ -43,14 +43,26 @@ alertmanager_route:
 grafana_security:
   admin_user: "{{ lookup('keepass', 'grafana/node', 'username') }}"
   admin_password: "{{ lookup('keepass', 'grafana/node', 'password') }}"
-grafana_server:
-  protocol: https
-  cert_file: "/etc/letsencrypt/{{ lookup('keepass', 'grafana/domain_name', 'username') }}-fullchain.crt"
-  cert_key: "/etc/letsencrypt/{{ lookup('keepass', 'grafana/domain_name', 'username') }}.key"
 grafana_alerting: {}
 
 firewall_rules:
-- rule: allow
-  port: 3000
-- rule: allow
-  port: 8388
+  - rule: allow
+    port: 443
+  - rule: allow
+    port: 80
+  - rule: allow
+    port: 22
+
+nginx_config_main_template_enable: true
+
+# certbot_admin_email: "{{ lookup('keepass', 'grafana/email', 'password') }}"
+# certbot_create_method: webroot
+# certbot_create_if_missing: true
+# certbot_webroot: /var/www/html
+# certbot_certs:
+#   - email: "{{ lookup('keepass', 'grafana/email', 'password') }}"
+#     domains:
+#       - "{{ lookup('keepass', 'grafana/domain_name', 'username') }}"
+
+# certbot_nginx_domains:
+#   - "{{ lookup('keepass', 'grafana/domain_name', 'username') }}"

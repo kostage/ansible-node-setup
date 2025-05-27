@@ -8,12 +8,13 @@ keepass_psw: !vault |
           3333643432613833330a613963643732326335363164653962393937376366616661383431653937
           6434
 
+tlsgen_ca_create: false
 tlsgen_ca_common_name: 'Konstantin Doroshenko CA'
 tlsgen_path: '/Users/kostage/Doroshenko/crypto/METRICS/CA/tmp_cert'
 tlsgen_ca_root_path: '/Users/kostage/Doroshenko/crypto/METRICS/CA'
 tlsgen_ca_root_key_name: 'ca_root.key'
 tlsgen_ca_root_cert_name: 'ca_root.crt'
-tlsgen_ca_secret_passphrase: 'kostage'
+tlsgen_ca_secret_passphrase: "{{ lookup('keepass', 'CA/secret', 'password') }}"
 
 tlsgen_remote_path: '/etc/node_tls_cert'
 tlsgen_key_name: 'server.key'

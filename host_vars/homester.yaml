@@ -21,13 +21,6 @@ node_exporter_basic_auth_users:
 
 firewall_rules:
   - rule: allow
-    port: 8388
-  - rule: allow
     port: 9100 # nodexp
-  # - rule: allow
-  #   port: 80
-
-letsencrypt:
-  domain_name: "{{ lookup('keepass', 'homester/domain_name', 'username') }}"
-  cert_dir: '/etc/letsencrypt'
-  email: "{{ lookup('keepass', 'homester/email', 'password') }}"
+  - rule: allow
+    port: 22
