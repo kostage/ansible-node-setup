@@ -54,15 +54,3 @@ firewall_rules:
     port: 22
 
 nginx_config_main_template_enable: true
-
-# certbot_admin_email: "{{ lookup('keepass', 'grafana/email', 'password') }}"
-# certbot_create_method: webroot
-# certbot_create_if_missing: true
-# certbot_webroot: /var/www/html
-# certbot_certs:
-#   - email: "{{ lookup('keepass', 'grafana/email', 'password') }}"
-#     domains:
-#       - "{{ lookup('keepass', 'grafana/domain_name', 'username') }}"
-
-# certbot_nginx_domains:
-#   - "{{ lookup('keepass', 'grafana/domain_name', 'username') }}"
