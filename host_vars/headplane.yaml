@@ -1,7 +1,6 @@
 ---
 ssh_port: 22
 ansible_become_password: "{{ lookup('keepass', 'headplane/root', 'password') }}"
-# ansible_become_password: "Ss9?ZnBxCT@-bbkA"
 
 user:
   name: "{{ lookup('keepass', 'headplane/user', 'username') }}"

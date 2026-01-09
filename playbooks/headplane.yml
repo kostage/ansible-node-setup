@@ -1,121 +1,121 @@
-# ---
-# - name: Create user with password and ssh key
-#   hosts: headplane_servers
-#   remote_user: root
-#   become: false
-#   tasks:
-#     - name: 'Install rsync on remote'
-#       ansible.builtin.import_role:
-#         name: apt
-#       vars:
-#         apt_packages:
-#           - rsync
-#       become: false
-#     - name: 'Create user'
-#       ansible.builtin.import_role:
-#         name: user
-#   ignore_errors: true
-#   ignore_unreachable: true
+---
+- name: Create user with password and ssh key
+  hosts: headplane_servers
+  remote_user: root
+  become: false
+  tasks:
+    - name: 'Install rsync on remote'
+      ansible.builtin.import_role:
+        name: apt
+      vars:
+        apt_packages:
+          - rsync
+      become: false
+    - name: 'Create user'
+      ansible.builtin.import_role:
+        name: user
+  ignore_errors: true
+  ignore_unreachable: true
 
-# - name: 'Install packages'
-#   hosts: headplane_servers
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: apt
+- name: 'Install packages'
+  hosts: headplane_servers
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: apt
 
-# - name: 'Allow HTTP for letsencrypt challenge'
-#   hosts: headplane_servers
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import firewall role'
-#       ansible.builtin.import_role:
-#         name: firewall
-#   vars:
-#     firewall_rules:
-#       - rule: allow
-#         port: "{{ http_port }}"
+- name: 'Allow HTTP for letsencrypt challenge'
+  hosts: headplane_servers
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import firewall role'
+      ansible.builtin.import_role:
+        name: firewall
+  vars:
+    firewall_rules:
+      - rule: allow
+        port: "{{ http_port }}"
 
-# - name: 'Install NGINX'
-#   hosts: headplane_servers
-#   become: true
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Install gnupg for apt-key support'
-#       ansible.builtin.apt:
-#         name:
-#           - gnupg
-#           - curl
-#         state: present
+- name: 'Install NGINX'
+  hosts: headplane_servers
+  become: true
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Install gnupg for apt-key support'
+      ansible.builtin.apt:
+        name:
+          - gnupg
+          - curl
+        state: present
 
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: nginxinc.nginx
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: nginxinc.nginx
 
-# - name: 'Create dedicated service users'
-#   hosts: headplane_servers
-#   become: true
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Create headscale system user'
-#       ansible.builtin.user:
-#         name: "{{ alertmanager_system_user }}"
-#         system: true
-#         shell: /usr/sbin/nologin
-#         home: /var/lib/headscale
-#         create_home: false
-#         groups: []
+- name: 'Create dedicated service users'
+  hosts: headplane_servers
+  become: true
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Create headscale system user'
+      ansible.builtin.user:
+        name: "{{ alertmanager_system_user }}"
+        system: true
+        shell: /usr/sbin/nologin
+        home: /var/lib/headscale
+        create_home: false
+        groups: []
 
-#     - name: 'Create headscale system user'
-#       ansible.builtin.user:
-#         name: headscale
-#         system: true
-#         shell: /usr/sbin/nologin
-#         home: /var/lib/headscale
-#         create_home: false
-#         groups: []
+    - name: 'Create headscale system user'
+      ansible.builtin.user:
+        name: headscale
+        system: true
+        shell: /usr/sbin/nologin
+        home: /var/lib/headscale
+        create_home: false
+        groups: []
 
-#     - name: 'Create headplane system user'
-#       ansible.builtin.user:
-#         name: headplane
-#         system: true
-#         shell: /usr/sbin/nologin
-#         home: /opt/headplane
-#         create_home: false
-#         groups: ["headscale"]
+    - name: 'Create headplane system user'
+      ansible.builtin.user:
+        name: headplane
+        system: true
+        shell: /usr/sbin/nologin
+        home: /opt/headplane
+        create_home: false
+        groups: ["headscale"]
 
-# - name: 'Install Node Exporter'
-#   hosts: headplane_servers
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import node_exporter role'
-#       ansible.builtin.import_role:
-#         name: prometheus.prometheus.node_exporter
+- name: 'Install Node Exporter'
+  hosts: headplane_servers
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import node_exporter role'
+      ansible.builtin.import_role:
+        name: prometheus.prometheus.node_exporter
 
-# - name: 'Install root cert to allow prometheus scrape nodes'
-#   hosts: headplane_servers
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: selfcert
+- name: 'Install root cert to allow prometheus scrape nodes'
+  hosts: headplane_servers
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: selfcert
 
-# - name: 'Install prometheus'
-#   hosts: headplane_servers
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: prometheus
+- name: 'Install prometheus'
+  hosts: headplane_servers
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: prometheus
 
-# - name: 'Install alertmanager'
-#   hosts: headplane_servers
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: prometheus.prometheus.alertmanager
+- name: 'Install alertmanager'
+  hosts: headplane_servers
+  remote_user: "{{ user.name }}"
+  tasks:
+    - name: 'Import role'
+      ansible.builtin.import_role:
+        name: prometheus.prometheus.alertmanager
 #       no_log: false
 
 - name: 'Install Grafana'
