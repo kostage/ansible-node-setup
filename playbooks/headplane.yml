@@ -116,7 +116,6 @@
     - name: 'Import role'
       ansible.builtin.import_role:
         name: prometheus.prometheus.alertmanager
-#       no_log: false
 
 - name: 'Install Grafana'
   hosts: headplane_servers
