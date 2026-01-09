@@ -1,0 +1,14 @@
+---
+- name: 'Create Headplane systemd service file'
+  become: true
+  ansible.builtin.template:
+    src: headplane.service.j2
+    dest: /etc/systemd/system/headplane.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: 'Reload systemd daemon'
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true

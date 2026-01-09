@@ -1,0 +1,6 @@
+---
+- name: restart headscale
+  become: true
+  ansible.builtin.service:
+    name: headscale
+    state: restarted

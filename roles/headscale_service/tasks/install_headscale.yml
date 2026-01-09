@@ -1,0 +1,23 @@
+---
+- name: 'Download Headscale binary'
+  become: true
+  ansible.builtin.get_url:
+    url: 'https://github.com/juanfont/headscale/releases/download/v{{ headscale_version }}/headscale_{{ headscale_version }}_linux_amd64'
+    dest: '{{ headscale_binary_path }}'
+    mode: '0755'
+    owner: root
+    group: root
+
+- name: 'Create Headscale directories'
+  become: true
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: directory
+    owner: headscale
+    group: headscale
+    mode: '0755'
+  loop:
+    - '{{ headscale_config_dir }}'
+    - '{{ headscale_data_dir }}'
+    - '{{ headscale_log_dir }}'
+    - '{{ headscale_socket_dir }}'

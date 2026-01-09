@@ -1,0 +1,41 @@
+---
+- name: 'Remove existing Headplane build directory if present'
+  become: true
+  ansible.builtin.file:
+    path: '{{ headplane_build_dir }}'
+    state: absent
+
+- name: 'Clone Headplane repository'
+  become: true
+  become_user: headplane
+  ansible.builtin.git:
+    repo: '{{ headplane_git_url }}'
+    dest: '{{ headplane_build_dir }}'
+    version: '{{ headplane_version }}'
+    force: true
+
+- name: 'Install dependencies and build Headplane'
+  become: true
+  become_user: headplane
+  ansible.builtin.shell:
+    cmd: |
+      export NVM_DIR="/home/headplane/.nvm"
+      export PATH="/home/headplane/.local/share/pnpm:$PATH"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+      cd {{ headplane_build_dir }}
+      pnpm install
+      pnpm build
+  args:
+    executable: /bin/bash
+  environment:
+    PATH: "/home/headplane/.local/share/pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    NVM_DIR: "/home/headplane/.nvm"
+    HOME: "/home/headplane"
+
+- name: 'Ensure main server file is executable'
+  become: true
+  ansible.builtin.file:
+    path: '{{ headplane_build_dir }}/build/server/index.js'
+    mode: '0755'
+    owner: headplane
+    group: headplane

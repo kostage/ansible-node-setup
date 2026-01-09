@@ -1,0 +1,4 @@
+---
+- name: 'Create OAuth2 proxy'
+  ansible.builtin.include_tasks: create_oauth2_proxy.yml
+  when: oauth2_proxy_name is defined

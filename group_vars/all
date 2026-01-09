@@ -10,8 +10,8 @@ keepass_psw: !vault |
 
 tlsgen_ca_create: false
 tlsgen_ca_common_name: 'Konstantin Doroshenko CA'
-tlsgen_path: '/Users/kostage/Doroshenko/crypto/METRICS/CA/tmp_cert'
-tlsgen_ca_root_path: '/Users/kostage/Doroshenko/crypto/METRICS/CA'
+tlsgen_path: '/Users/kostage/Doroshenko/nodes/CA/tmp_cert'
+tlsgen_ca_root_path: '/Users/kostage/Doroshenko/nodes/CA'
 tlsgen_ca_root_key_name: 'ca_root.key'
 tlsgen_ca_root_cert_name: 'ca_root.crt'
 tlsgen_ca_secret_passphrase: "{{ lookup('keepass', 'CA/secret', 'password') }}"
@@ -20,5 +20,4 @@ tlsgen_remote_path: '/etc/node_tls_cert'
 tlsgen_key_name: 'server.key'
 tlsgen_cert_name: 'server.crt'
 
-telegram_bot_token: "{{ lookup('keepass', 'telegram_bot/token', 'password') }}"
 telegram_chat_id: "{{ lookup('keepass', 'telegram_bot/chat_id', 'password') | int }}"

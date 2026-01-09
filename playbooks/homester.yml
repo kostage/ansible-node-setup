@@ -24,14 +24,6 @@
       ansible.builtin.import_role:
         name: apt
 
-# - name: 'Install docker'
-#   hosts: homester
-#   remote_user: "{{ user.name }}"
-#   tasks:
-#     - name: 'Import role'
-#       ansible.builtin.import_role:
-#         name: docker
-
 - name: Generate TLS cert
   hosts: localhost
   connection: local

@@ -1,0 +1,17 @@
+[Unit]
+Description=OAuth2 Proxy for {{ oauth2_proxy_name }}
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+
+ExecStart={{ oauth2_proxy_install_dir | default('/opt/oauth2_proxy_' + oauth2_proxy_name) }}/oauth2-proxy --config={{ oauth2_proxy_install_dir | default('/opt/oauth2_proxy_' + oauth2_proxy_name) }}/oauth2_proxy.cfg
+ExecReload=/bin/kill -HUP $MAINPID
+
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

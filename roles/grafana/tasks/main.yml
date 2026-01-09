@@ -1,0 +1,21 @@
+---
+# Grafana service role - Installs Grafana, creates SSL certificate, and configures nginx
+
+- name: 'Import Grafana installation role'
+  ansible.builtin.import_role:
+    name: grafana.grafana.grafana
+
+- name: 'Create SSL certificate for Grafana'
+  ansible.builtin.import_role:
+    name: certbot
+  vars:
+    certbot_name: grafana
+    certbot_domains: "{{ grafana_domains }}"
+    certbot_email: "{{ user.email }}"
+
+- name: 'Configure nginx for Grafana'
+  ansible.builtin.import_role:
+    name: nginx_config
+  vars:
+    nginx_config_template: "nginx.conf.j2"
+    nginx_config_service_name: "grafana"

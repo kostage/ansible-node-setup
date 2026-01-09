@@ -1,0 +1,34 @@
+---
+- name: 'Install Headplane service dependencies'
+  include_tasks: install_dependencies.yml
+
+- name: 'Build and install Headplane'
+  include_tasks: build_headplane.yml
+
+- name: 'Configure Headplane'
+  include_tasks: configure_headplane.yml
+
+- name: 'Create Headplane systemd service'
+  include_tasks: create_service.yml
+
+- name: 'Start and enable Headplane service'
+  become: true
+  ansible.builtin.systemd:
+    name: headplane
+    enabled: true
+    state: restarted
+
+- name: 'Create SSL certificate for Headplane'
+  ansible.builtin.import_role:
+    name: certbot
+  vars:
+    certbot_name: headplane
+    certbot_domains: "{{ headplane_domains }}"
+    certbot_email: "{{ user.email }}"
+
+- name: 'Configure nginx for Headplane'
+  ansible.builtin.import_role:
+    name: nginx_config
+  vars:
+    nginx_config_template: "nginx.conf.j2"
+    nginx_config_service_name: "headplane"

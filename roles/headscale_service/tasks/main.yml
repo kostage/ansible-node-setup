@@ -1,0 +1,31 @@
+---
+- name: 'Install Headscale binary'
+  include_tasks: install_headscale.yml
+
+- name: 'Configure Headscale'
+  include_tasks: configure_headscale.yml
+
+- name: 'Create Headscale systemd service'
+  include_tasks: create_service.yml
+
+- name: 'Start and enable Headscale service'
+  become: true
+  ansible.builtin.systemd:
+    name: headscale
+    enabled: true
+    state: restarted
+
+- name: 'Create SSL certificate for Headscale'
+  ansible.builtin.import_role:
+    name: certbot
+  vars:
+    certbot_name: headscale
+    certbot_domains: "{{ headscale_domains }}"
+    certbot_email: "{{ user.email }}"
+
+- name: 'Configure nginx for Headscale'
+  ansible.builtin.import_role:
+    name: nginx_config
+  vars:
+    nginx_config_template: "nginx.conf.j2"
+    nginx_config_service_name: "headscale"

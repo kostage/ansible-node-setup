@@ -1,0 +1,12 @@
+---
+- name: 'Install certbot and dependencies'
+  become: true
+  ansible.builtin.apt:
+    name:
+      - certbot
+      - python3-certbot-nginx
+    state: present
+    update_cache: true
+
+- name: 'Create SSL certificate'
+  ansible.builtin.include_tasks: create_certificate.yml

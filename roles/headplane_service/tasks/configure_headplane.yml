@@ -1,0 +1,47 @@
+---
+- name: 'Generate Headplane cookie secret'
+  ansible.builtin.shell:
+    cmd: |
+      openssl rand -base64 24 | tr -d '\n' | tr -- '+/' '-_'
+  register: headplane_cookie_secret_generated
+
+- name: 'Set cookie secret variable'
+  ansible.builtin.set_fact:
+    headplane_cookie_secret: '{{ headplane_cookie_secret | default(headplane_cookie_secret_generated.stdout) }}'
+
+- name: 'Create Headscale user for Headplane'
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      headscale users create headplane
+  register: headscale_user_create_result
+  failed_when: false
+  changed_when: headscale_user_create_result.rc != 1 or 'already exists' not in headscale_user_create_result.stderr
+
+- name: 'Get Headscale user ID'
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      headscale users list -o json | jq -r '.[] | select(.name=="headplane") | .id'
+  register: headscale_user_id_result
+
+- name: 'Create Headscale API key for Headplane'
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      headscale apikeys create --expiration 360d
+  register: headscale_api_key_result
+
+- name: 'Set Headscale API key variable'
+  ansible.builtin.set_fact:
+    headscale_api_key: '{{ headscale_api_key | default(headscale_api_key_result.stdout_lines[0]) }}'
+
+- name: 'Create Headplane configuration file'
+  become: true
+  ansible.builtin.template:
+    src: headplane_config.yaml.j2
+    dest: '{{ headplane_config_dir }}/config.yaml'
+    owner: headplane
+    group: headplane
+    mode: '0644'
+  notify: restart headplane

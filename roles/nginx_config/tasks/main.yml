@@ -1,0 +1,20 @@
+---
+# nginx_config role - Generic nginx template renderer
+# This role renders a template from the calling service role and deploys it
+
+- name: 'Create NGINX configuration for service'
+  become: true
+  ansible.builtin.template:
+    src: "{{ nginx_config_template }}"
+    dest: "/etc/nginx/conf.d/{{ nginx_config_service_name }}.conf"
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nginx
+
+- name: 'Test NGINX configuration'
+  become: true
+  ansible.builtin.command: nginx -t
+  register: nginx_test
+  failed_when: nginx_test.rc != 0
+  changed_when: false

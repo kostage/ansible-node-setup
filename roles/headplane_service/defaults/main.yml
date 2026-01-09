@@ -1,0 +1,27 @@
+---
+# Default Headplane service configuration
+# Note: headplane is always enabled in headplane setup
+
+# Headplane installation settings
+headplane_build_dir: /home/headplane/app  # Build everything under headplane user's home directory
+headplane_version: main  # Use 'main' branch instead of 'latest' (which is not a valid git ref)
+headplane_git_url: https://github.com/tale/headplane.git
+
+# Headplane runtime settings
+headplane_port: 7777
+headplane_host: "127.0.0.1"
+headplane_config_dir: /etc/headplane
+headplane_data_dir: /var/lib/headplane
+headplane_log_dir: /var/log/headplane
+
+# Headscale integration
+headscale_url: "http://localhost:4444"
+headscale_config_path: /etc/headscale/config.yaml
+headscale_socket_dir: /var/run/headscale
+
+# Node.js installation
+nodejs_version: "22"  # Headplane requires Node >=22.18 <23 (nvm uses format like "22" not "22.x")
+
+# Nginx configuration
+# Extract primary domain for SSL certificate paths
+headplane_domain: "{{ headplane_domains[0] }}"

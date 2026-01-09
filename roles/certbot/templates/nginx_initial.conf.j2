@@ -1,0 +1,15 @@
+# Initial HTTP-only configuration for certbot certificate generation
+# This will be replaced by the final nginx_config role configuration
+
+server {
+    listen 80;
+    server_name {{ certbot_domains | join(' ') }};
+
+    location / {
+        # Just return a simple page - certbot will modify this
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }
+
+    # Certbot will add its own location blocks for challenges
+}

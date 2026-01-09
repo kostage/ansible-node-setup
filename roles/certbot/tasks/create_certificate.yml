@@ -1,0 +1,52 @@
+---
+- name: 'Create initial HTTP-only NGINX config for {{ certbot_name }}'
+  become: true
+  ansible.builtin.template:
+    src: nginx_initial.conf.j2
+    dest: '/etc/nginx/conf.d/{{ certbot_name }}_initial.conf'
+    owner: root
+    group: root
+    mode: '0644'
+  notify: restart nginx
+
+- name: 'Restart NGINX to apply initial config for {{ certbot_name }}'
+  become: true
+  ansible.builtin.service:
+    name: nginx
+    state: restarted
+
+- name: 'Create SSL certificate with certbot for {{ certbot_name }}'
+  become: true
+  ansible.builtin.command:
+    cmd: >-
+      certbot certonly
+      --nginx
+      {% for domain in certbot_domains %}
+      -d {{ domain }}
+      {% endfor %}
+      --email {{ certbot_email }}
+      --rsa-key-size {{ certbot_rsa_key_size | default(4096) }}
+      --agree-tos
+      --non-interactive
+      {% if certbot_force_renew | default(false) %}
+      --force-renewal
+      {% endif %}
+  register: certbot_result
+  changed_when: "'Congratulations' in certbot_result.stdout"
+
+- name: 'Remove initial NGINX config for {{ certbot_name }}'
+  become: true
+  ansible.builtin.file:
+    path: '/etc/nginx/conf.d/{{ certbot_name }}_initial.conf'
+    state: absent
+  notify: restart nginx
+
+- name: 'Setup automatic renewal for {{ certbot_name }}'
+  become: true
+  ansible.builtin.cron:
+    name: "certbot renew for {{ certbot_name }}"
+    job: "certbot renew --quiet --post-hook 'systemctl reload nginx'"
+    minute: "30"
+    hour: "2"
+    weekday: "1"
+    user: root

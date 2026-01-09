@@ -1,0 +1,27 @@
+---
+# Grafana service configuration
+# These variables are used by both the Grafana installation and nginx configuration
+
+grafana_service_port: 3000
+grafana_oauth2_port: 4180
+
+# Domains are defined in host_vars
+# grafana_domains: []
+# grafana_oauth2_client_id: ""
+# grafana_oauth2_client_secret: ""
+
+# Extract primary domain for OAuth2 redirect URL
+grafana_domain: "{{ grafana_domains[0] }}"
+
+# Grafana security settings
+grafana_security:
+  allow_embedding: true
+  cookie_secure: true
+  cookie_samesite: lax
+  disable_gravator: true
+  content_security_policy: true
+  x_content_type_options: true
+  x_xss_protection: true
+
+grafana_auth:
+  disable_login_form: false  # OAuth2 will handle auth

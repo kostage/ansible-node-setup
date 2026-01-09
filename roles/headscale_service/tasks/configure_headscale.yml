@@ -1,0 +1,10 @@
+---
+- name: 'Create Headscale configuration file'
+  become: true
+  ansible.builtin.template:
+    src: headscale_config.yaml.j2
+    dest: '{{ headscale_config_dir }}/config.yaml'
+    owner: headscale
+    group: headscale
+    mode: '0644'
+  notify: restart headscale

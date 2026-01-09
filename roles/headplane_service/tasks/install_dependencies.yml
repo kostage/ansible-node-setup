@@ -1,0 +1,100 @@
+---
+- name: 'Install build dependencies'
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+    name:
+      - curl
+      - wget
+      - build-essential
+    state: present
+
+- name: 'Ensure headplane user exists with correct home directory'
+  become: true
+  ansible.builtin.user:
+    name: headplane
+    system: true
+    shell: /bin/bash  # Changed from nologin to bash to allow running node scripts
+    home: /home/headplane
+    create_home: true
+
+- name: 'Create headplane user home directory'
+  become: true
+  ansible.builtin.file:
+    path: /home/headplane
+    state: directory
+    owner: headplane
+    group: headplane
+    mode: '0755'
+
+- name: 'Install nvm (Node Version Manager) for headplane service user'
+  become: true
+  become_user: headplane
+  ansible.builtin.shell:
+    cmd: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+    creates: /home/headplane/.nvm/nvm.sh
+
+- name: 'Install Node.js using nvm for headplane service user'
+  become: true
+  become_user: headplane
+  ansible.builtin.shell:
+    cmd: |
+      export NVM_DIR="/home/headplane/.nvm"
+      [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+      nvm install {{ nodejs_version }}
+      nvm use {{ nodejs_version }}
+      nvm alias default {{ nodejs_version }}
+  register: nvm_install_result_headplane
+
+- name: 'Install pnpm for headplane user'
+  become: true
+  become_user: headplane
+  ansible.builtin.shell:
+    cmd: curl -fsSL https://get.pnpm.io/install.sh | sh -
+    creates: /home/headplane/.local/share/pnpm/pnpm
+  environment:
+    SHELL: /bin/bash
+    HOME: /home/headplane
+
+- name: 'Verify Node.js version for headplane user'
+  become: true
+  become_user: headplane
+  ansible.builtin.shell: |
+    export NVM_DIR="/home/headplane/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    node --version
+  register: node_version_check_headplane
+
+- name: 'Display Node.js version for headplane user'
+  ansible.builtin.debug:
+    msg: "Headplane user Node.js version: {{ node_version_check_headplane.stdout }}"
+
+- name: 'Find actual Node.js binary path for headplane user'
+  become: true
+  become_user: headplane
+  ansible.builtin.shell: |
+    export NVM_DIR="/home/headplane/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    which node
+  register: node_binary_path_headplane
+
+- name: 'Set Node.js binary path fact'
+  ansible.builtin.set_fact:
+    headplane_node_path: "{{ node_binary_path_headplane.stdout }}"
+
+- name: 'Display Node.js binary path'
+  ansible.builtin.debug:
+    msg: "Headplane Node.js binary: {{ headplane_node_path }}"
+
+- name: 'Create headplane directories'
+  become: true
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: directory
+    owner: headplane
+    group: headplane
+    mode: '0755'
+  loop:
+    - '{{ headplane_data_dir }}'
+    - '{{ headplane_log_dir }}'
+    - '{{ headplane_config_dir }}'

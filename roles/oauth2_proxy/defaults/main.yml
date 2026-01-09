@@ -1,0 +1,4 @@
+---
+# Default OAuth2 Proxy configuration
+oauth2_proxy_instances: []  # List of OAuth2 proxy instances
+oauth2_proxy_version: "7.12.0"

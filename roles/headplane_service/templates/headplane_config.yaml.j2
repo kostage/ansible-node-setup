@@ -1,0 +1,26 @@
+server:
+  host: "{{ headplane_host }}"
+  port: {{ headplane_port }}
+  cookie_secret: "{{ headplane_cookie_secret }}"
+  cookie_secure: true
+  data_path: "{{ headplane_data_dir }}"
+
+headscale:
+  url: "{{ headscale_url }}"
+  config_path: "{{ headscale_config_path }}"
+  config_strict: true
+
+integration:
+  agent:
+    enabled: false
+    pre_authkey: "{{ headscale_api_key }}"
+  docker:
+    enabled: false
+    container_label: "me.tale.headplane.target=headscale"
+    socket: "unix:///var/run/docker.sock"
+  kubernetes:
+    enabled: false
+    validate_manifest: true
+    pod_name: "headscale"
+  proc:
+    enabled: false

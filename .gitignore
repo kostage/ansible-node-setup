@@ -12,3 +12,6 @@ hosts.yml
 
 roles/geerlingguy.*
 roles/nginxinc.*
+
+HEADPLANE.md
+CLAUDE.md

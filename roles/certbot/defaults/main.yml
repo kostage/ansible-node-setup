@@ -1,0 +1,5 @@
+---
+# Default certbot settings
+certbot_email: ""
+certbot_rsa_key_size: 4096
+certbot_dry_run: false

@@ -1,0 +1,104 @@
+---
+ssh_port: 22
+ansible_become_password: "{{ lookup('keepass', 'headplane/root', 'password') }}"
+# ansible_become_password: "Ss9?ZnBxCT@-bbkA"
+
+user:
+  name: "{{ lookup('keepass', 'headplane/user', 'username') }}"
+  password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
+  sshkey_save_path: '/Users/kostage/Doroshenko/nodes/headplane/ssh'
+  email: "{{ lookup('keepass', 'headplane/email', 'password') }}"
+
+grafana_domains:
+  - "dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+  - "www.dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+
+headscale_domains:
+  - "headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+  - "www.headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+
+headplane_domains:
+  - "headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+  - "www.headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+
+grafana_oauth2_port: 4180
+grafana_oauth2_client_id: "{{ lookup('keepass', 'headplane/grafana_oauth2_client_id', 'password') }}"
+grafana_oauth2_client_secret: "{{ lookup('keepass', 'headplane/grafana_oauth2_client_secret', 'password') }}"
+
+headplane_oauth2_port: 4190
+headplane_oauth2_client_id: "{{ lookup('keepass', 'headplane/headplane_oauth2_client_id', 'password') }}"
+headplane_oauth2_client_secret: "{{ lookup('keepass', 'headplane/headplane_oauth2_client_secret', 'password') }}"
+
+# Internal service ports
+grafana_service_port: 3000
+headplane_service_port: 7777
+headscale_service_port: 4444
+http_port: 80
+
+# Prometheus configuration
+prometheus:
+  nodes:
+    - name: 'homester'
+      password: "{{ lookup('keepass', 'homester/node', 'password') }}"
+      ip: "{{ lookup('keepass', 'homester/ip', 'password') }}"
+
+# Alertmanager configuration
+alertmanager_version: latest
+alertmanager_system_user: alertmanager
+alertmanager_receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - api_url: 'https://api.telegram.org'
+        bot_token: "{{ lookup('keepass', 'telegram_bot/token', 'password') }}"
+        chat_id: "{{ telegram_chat_id }}" # take from inventory due to weird integer var behavior
+        disable_notifications: false
+        http_config:
+          follow_redirects: true
+        send_resolved: true
+        parse_mode: HTML
+
+alertmanager_route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+  receiver: 'telegram'
+
+# Firewall configuration
+firewall_rules:
+  - rule: allow
+    port: 443
+  - rule: allow
+    port: 80
+  - rule: allow
+    port: 22
+
+# Package configuration
+apt_packages:
+  - curl
+  - wget
+  - git
+  - unzip
+  - python3
+  - python3-pip
+  - build-essential
+
+headscale_dns_domain: "{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+headscale_server_url: "https://headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}:443"
+
+# Grafana configuration
+grafana_security:
+  admin_user: "{{ lookup('keepass', 'headplane/user', 'username') }}"
+  admin_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
+  disable_grafana_login: true  # Disable login form
+
+grafana_auth:
+  proxy:
+    enabled: true
+    header_name: "X-WEBAUTH-USER"
+    header_property: "username"
+    auto_sign_up: true
+  anonymous:
+    enabled: true
+    org_name: "Main Org."
+    org_role: "Admin"

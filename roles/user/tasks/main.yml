@@ -31,6 +31,13 @@
     state: present
     key: "{{ lookup('file', '{{ user.sshkey_save_path }}/{{ user.name }}_id_rsa.pub') }}"
 
+- name: Configure passwordless sudo for user
+  ansible.builtin.copy:
+    dest: "/etc/sudoers.d/{{ user.name }}"
+    content: "{{ user.name }} ALL=(ALL) NOPASSWD:ALL\n"
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
 - name: Stop and Start ssh
   service:
     name: ssh

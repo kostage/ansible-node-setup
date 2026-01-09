@@ -1,0 +1,30 @@
+[Unit]
+After=syslog.target
+After=network.target
+Description=headscale coordination server for Tailscale
+X-Restart-Triggers={{ headscale_config_dir }}/config.yaml
+
+[Service]
+Type=simple
+User=headscale
+Group=headscale
+ExecStart={{ headscale_binary_path }} serve
+ExecReload=/usr/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=5
+
+WorkingDirectory={{ headscale_data_dir }}
+ReadWritePaths={{ headscale_data_dir }} {{ headscale_log_dir }} {{ headscale_socket_dir }}
+
+# Relax some restrictions for database access
+ProtectSystem=strict
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectHostname=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+
+[Install]
+WantedBy=multi-user.target

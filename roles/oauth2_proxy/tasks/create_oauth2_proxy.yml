@@ -1,0 +1,91 @@
+---
+- name: 'Create OAuth2 proxy directory for {{ oauth2_proxy_name }}'
+  become: true
+  ansible.builtin.file:
+    path: '{{ oauth2_proxy_install_dir | default("/opt/oauth2_proxy_" + oauth2_proxy_name) }}'
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: 'Download OAuth2 proxy'
+  become: true
+  ansible.builtin.get_url:
+    url: 'https://github.com/oauth2-proxy/oauth2-proxy/releases/download/v{{ oauth2_proxy_version }}/oauth2-proxy-v{{ oauth2_proxy_version }}.linux-amd64.tar.gz'
+    dest: '/tmp/oauth2-proxy-{{ oauth2_proxy_name }}.tar.gz'
+    mode: '0644'
+
+- name: 'Extract OAuth2 proxy'
+  become: true
+  ansible.builtin.unarchive:
+    src: '/tmp/oauth2-proxy-{{ oauth2_proxy_name }}.tar.gz'
+    dest: '/tmp/'
+    remote_src: true
+
+- name: 'Install OAuth2 proxy binary for {{ oauth2_proxy_name }}'
+  become: true
+  ansible.builtin.copy:
+    src: '/tmp/oauth2-proxy-v{{ oauth2_proxy_version }}.linux-amd64/oauth2-proxy'
+    dest: '{{ oauth2_proxy_install_dir | default("/opt/oauth2_proxy_" + oauth2_proxy_name) }}/oauth2-proxy'
+    mode: '0755'
+    remote_src: true
+
+- name: 'Create authenticated emails file for {{ oauth2_proxy_name }}'
+  become: true
+  ansible.builtin.copy:
+    content: '{{ oauth2_proxy_authenticated_emails | join("\n") }}'
+    dest: '{{ oauth2_proxy_install_dir | default("/opt/oauth2_proxy_" + oauth2_proxy_name) }}/authenticated_emails.txt'
+    owner: root
+    group: root
+    mode: '0644'
+  when: oauth2_proxy_authenticated_emails is defined
+
+- name: 'Generate OAuth2 cookie secret'
+  ansible.builtin.shell:
+    cmd: |
+      openssl rand -base64 32 | tr -d '\n' | tr -- '+/' '-_'
+  register: oauth2_proxy_cookie_secret_generated
+
+- name: 'Set OAuth2 cookie secret variable'
+  ansible.builtin.set_fact:
+    oauth2_proxy_cookie_secret: '{{ oauth2_proxy_cookie_secret_generated.stdout }}'
+
+- name: 'Create OAuth2 proxy configuration for {{ oauth2_proxy_name }}'
+  become: true
+  ansible.builtin.template:
+    src: oauth2_proxy.cfg.j2
+    dest: '{{ oauth2_proxy_install_dir | default("/opt/oauth2_proxy_" + oauth2_proxy_name) }}/oauth2_proxy.cfg'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: 'Create OAuth2 proxy systemd service for {{ oauth2_proxy_name }}'
+  become: true
+  ansible.builtin.template:
+    src: oauth2_proxy.service.j2
+    dest: '/etc/systemd/system/oauth2_proxy_{{ oauth2_proxy_name }}.service'
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: 'Reload systemd daemon for {{ oauth2_proxy_name }}'
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+
+- name: 'Enable and start OAuth2 proxy {{ oauth2_proxy_name }}'
+  become: true
+  ansible.builtin.systemd:
+    name: 'oauth2_proxy_{{ oauth2_proxy_name }}.service'
+    enabled: true
+    state: restarted
+  when: oauth2_proxy_enabled | default(true)
+
+- name: 'Cleanup temporary files for {{ oauth2_proxy_name }}'
+  become: true
+  ansible.builtin.file:
+    path: '{{ item }}'
+    state: absent
+  loop:
+    - '/tmp/oauth2-proxy-{{ oauth2_proxy_name }}.tar.gz'
+    - '/tmp/oauth2-proxy-v{{ oauth2_proxy_version }}.linux-amd64'

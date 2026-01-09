@@ -1,0 +1,26 @@
+---
+# Default Headscale service configuration
+# Note: headscale is always enabled in headplane setup
+
+# Headscale installation
+headscale_binary_path: "/usr/local/bin/headscale"
+headscale_version: "0.26.1"
+
+# Headscale configuration
+headscale_config_dir: "/etc/headscale"
+headscale_data_dir: "/var/lib/headscale"
+headscale_log_dir: "/var/log/headscale"
+headscale_socket_dir: "/var/run/headscale"
+
+# Network configuration
+headscale_server_url: "http://127.0.0.1:4444"
+headscale_listen_addr: "127.0.0.1:4444"
+headscale_metrics_listen_addr: "127.0.0.1:5555"
+headscale_grpc_listen_addr: "127.0.0.1:50443"
+
+# DERP configuration
+headscale_derp_enabled: false
+
+# Nginx configuration
+# Extract primary domain for SSL certificate paths
+headscale_domain: "{{ headscale_domains[0] }}"
