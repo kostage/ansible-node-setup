@@ -6,13 +6,20 @@ roles:
   - name: geerlingguy.certbot
 
 collections:
-  - ansible.posix
-  - community.general
-  - community.crypto
-  - prometheus.prometheus
-  - grafana.grafana
-  - viczem.keepass
+  # Core Ansible collections
   - name: ansible.posix
-    version: 1.5.4
+    version: 2.1.0
+
+  # Community collections
   - name: community.general
-    version: 9.2.0
+    version: 12.5.0
+  - name: community.crypto
+    version: 3.1.1
+
+  # Monitoring collections
+  - name: prometheus.prometheus
+  - name: grafana.grafana
+    version: ">=3.0.0"
+
+  # Secrets management
+  - name: viczem.keepass

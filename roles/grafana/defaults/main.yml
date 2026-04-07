@@ -10,18 +10,15 @@ grafana_oauth2_port: 4180
 # grafana_oauth2_client_id: ""
 # grafana_oauth2_client_secret: ""
 
-# Extract primary domain for OAuth2 redirect URL
-grafana_domain: "{{ grafana_domains[0] }}"
+# Primary domain for nginx SSL certificate paths (must NOT use grafana_domain as it's deprecated)
+grafana_primary_domain: "{{ grafana_domains[0] }}"
 
-# Grafana security settings
-grafana_security:
-  allow_embedding: true
-  cookie_secure: true
-  cookie_samesite: lax
-  disable_gravator: true
-  content_security_policy: true
-  x_content_type_options: true
-  x_xss_protection: true
-
-grafana_auth:
-  disable_login_form: false  # OAuth2 will handle auth
+# Note: All Grafana configuration is now done via grafana_ini in host_vars
+# Deprecated variables that must NOT be set (grafana.grafana >= 6.0.0):
+# - grafana_security, grafana_server, grafana_database, grafana_auth
+# - grafana_logs_dir, grafana_data_dir, grafana_remote_cache
+# - grafana_users, grafana_session, grafana_analytics, grafana_smtp
+# - grafana_alerting, grafana_unified_alerting, grafana_log, grafana_metrics
+# - grafana_tracing, grafana_snapshots, grafana_image_storage
+# - grafana_date_formats, grafana_feature_toggles, grafana_plugins_ops
+# - grafana_instance, grafana_address, grafana_port, grafana_domain, grafana_url, grafana_panels

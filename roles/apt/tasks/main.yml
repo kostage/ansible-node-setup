@@ -1,4 +1,18 @@
 ---
+- name: Ensure apt directories exist
+  become: true
+  ansible.builtin.file:
+    path: /var/lib/apt/lists
+    state: directory
+    mode: '0755'
+
+- name: Initialize apt database
+  become: true
+  ansible.builtin.command: apt-get update
+  args:
+    creates: /var/lib/apt/lists/lock
+  ignore_errors: true
+
 - name: Update cache
   become: true
   ansible.builtin.apt:

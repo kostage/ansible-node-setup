@@ -1,18 +1,30 @@
 ---
-- name: 'Remove existing Headplane build directory if present'
+- name: 'Check if Headplane is already built'
+  become: true
+  ansible.builtin.stat:
+    path: '{{ headplane_install_dir }}/build/server/index.js'
+  register: headplane_built
+
+- name: 'Display Headplane build status'
+  ansible.builtin.debug:
+    msg: "Headplane already built: {{ headplane_built.stat.exists }}, force_reinstall: {{ force_reinstall }}"
+
+- name: 'Remove existing Headplane build directory if force_reinstall is true'
   become: true
   ansible.builtin.file:
-    path: '{{ headplane_build_dir }}'
+    path: '{{ headplane_install_dir }}'
     state: absent
+  when: force_reinstall | bool
 
 - name: 'Clone Headplane repository'
   become: true
   become_user: headplane
   ansible.builtin.git:
     repo: '{{ headplane_git_url }}'
-    dest: '{{ headplane_build_dir }}'
+    dest: '{{ headplane_install_dir }}'
     version: '{{ headplane_version }}'
     force: true
+  when: not headplane_built.stat.exists or force_reinstall | bool
 
 - name: 'Install dependencies and build Headplane'
   become: true
@@ -22,7 +34,7 @@
       export NVM_DIR="/home/headplane/.nvm"
       export PATH="/home/headplane/.local/share/pnpm:$PATH"
       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-      cd {{ headplane_build_dir }}
+      cd {{ headplane_install_dir }}
       pnpm install
       pnpm build
   args:
@@ -31,11 +43,13 @@
     PATH: "/home/headplane/.local/share/pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
     NVM_DIR: "/home/headplane/.nvm"
     HOME: "/home/headplane"
+  when: not headplane_built.stat.exists or force_reinstall | bool
 
 - name: 'Ensure main server file is executable'
   become: true
   ansible.builtin.file:
-    path: '{{ headplane_build_dir }}/build/server/index.js'
+    path: '{{ headplane_install_dir }}/build/server/index.js'
     mode: '0755'
     owner: headplane
     group: headplane
+  when: headplane_built.stat.exists or force_reinstall | bool

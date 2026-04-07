@@ -8,10 +8,6 @@ user:
   sshkey_save_path: '/Users/kostage/Doroshenko/nodes/headplane/ssh'
   email: "{{ lookup('keepass', 'headplane/email', 'password') }}"
 
-grafana_domains:
-  - "dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
-  - "www.dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
-
 headscale_domains:
   - "headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
   - "www.headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
@@ -20,26 +16,14 @@ headplane_domains:
   - "headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
   - "www.headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
 
-grafana_oauth2_port: 4180
-grafana_oauth2_client_id: "{{ lookup('keepass', 'headplane/grafana_oauth2_client_id', 'password') }}"
-grafana_oauth2_client_secret: "{{ lookup('keepass', 'headplane/grafana_oauth2_client_secret', 'password') }}"
-
-headplane_oauth2_port: 4190
-headplane_oauth2_client_id: "{{ lookup('keepass', 'headplane/headplane_oauth2_client_id', 'password') }}"
-headplane_oauth2_client_secret: "{{ lookup('keepass', 'headplane/headplane_oauth2_client_secret', 'password') }}"
-
 # Internal service ports
-grafana_service_port: 3000
-headplane_service_port: 7777
 headscale_service_port: 4444
+headplane_service_port: 7777
 http_port: 80
 
 # Prometheus configuration
 prometheus:
-  nodes:
-    - name: 'homester'
-      password: "{{ lookup('keepass', 'homester/node', 'password') }}"
-      ip: "{{ lookup('keepass', 'homester/ip', 'password') }}"
+  nodes: []
 
 # Alertmanager configuration
 alertmanager_version: latest
@@ -80,24 +64,38 @@ apt_packages:
   - unzip
   - python3
   - python3-pip
+  - python3-debian
+  - software-properties-common
   - build-essential
 
 headscale_dns_domain: "{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
 headscale_server_url: "https://headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}:443"
 
-# Grafana configuration
-grafana_security:
-  admin_user: "{{ lookup('keepass', 'headplane/user', 'username') }}"
-  admin_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
-  disable_grafana_login: true  # Disable login form
+headplane_basic_auth_user: "{{ user.name }}"
+headplane_basic_auth_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
+headplane_domain: "headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
 
-grafana_auth:
-  proxy:
-    enabled: true
-    header_name: "X-WEBAUTH-USER"
-    header_property: "username"
-    auto_sign_up: true
-  anonymous:
-    enabled: true
-    org_name: "Main Org."
-    org_role: "Admin"
+# Grafana configuration
+grafana_admin_user: "{{ lookup('keepass', 'headplane/user', 'username') }}"
+grafana_admin_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
+grafana_system_user: "grafana"
+grafana_system_uid: 472
+grafana_domains:
+  - "dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+  - "www.dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+grafana_service_port: 3000
+
+# Disable built-in repository management (we handle it manually due to geo-blocking)
+grafana_manage_repo: false
+
+# Grafana configuration using new grafana_ini structure (grafana.grafana >= 6.0.0)
+grafana_ini:
+  security:
+    admin_user: "{{ lookup('keepass', 'headplane/user', 'username') }}"
+    admin_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
+    cookie_secure: true
+    cookie_samesite: lax
+    disable_gravatar: true
+    content_security_policy: true
+    x_content_type_options: true
+    x_xss_protection: true

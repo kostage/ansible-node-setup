@@ -7,7 +7,16 @@
       - curl
       - wget
       - build-essential
+      - jq
     state: present
+
+- name: 'Check if headplane user exists'
+  become: true
+  ansible.builtin.getent:
+    database: passwd
+    key: headplane
+  register: headplane_user_check
+  failed_when: false
 
 - name: 'Ensure headplane user exists with correct home directory'
   become: true
@@ -17,6 +26,7 @@
     shell: /bin/bash  # Changed from nologin to bash to allow running node scripts
     home: /home/headplane
     create_home: true
+  when: headplane_user_check is failed
 
 - name: 'Create headplane user home directory'
   become: true

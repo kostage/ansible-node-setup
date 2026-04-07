@@ -41,6 +41,22 @@
     state: absent
   notify: restart nginx
 
+- name: 'Check if crontab exists for root'
+  become: true
+  ansible.builtin.stat:
+    path: /var/spool/cron/crontabs/root
+  register: root_crontab_stat
+
+- name: 'Create empty crontab if it does not exist'
+  become: true
+  ansible.builtin.file:
+    path: /var/spool/cron/crontabs/root
+    state: touch
+    mode: '0600'
+    owner: root
+    group: root
+  when: not root_crontab_stat.stat.exists
+
 - name: 'Setup automatic renewal for {{ certbot_name }}'
   become: true
   ansible.builtin.cron:
@@ -50,3 +66,4 @@
     hour: "2"
     weekday: "1"
     user: root
+  ignore_errors: true

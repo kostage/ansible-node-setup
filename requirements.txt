@@ -1,4 +1,9 @@
+# Ansible core
+ansible-core==2.20.4
+
+# Password and authentication
 bcrypt==4.1.3
-pykeepass==4.1.0
 passlib==1.7.4
-ansible-core==2.16.8
+
+# KeePass integration for secrets management
+pykeepass==4.1.1.post1

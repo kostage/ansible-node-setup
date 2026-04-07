@@ -1,4 +1,13 @@
 ---
+- name: 'Create Headscale socket directory'
+  become: true
+  ansible.builtin.file:
+    path: '{{ headscale_socket_dir }}'
+    state: directory
+    owner: headscale
+    group: headscale
+    mode: '0755'
+
 - name: 'Create Headscale configuration file'
   become: true
   ansible.builtin.template:

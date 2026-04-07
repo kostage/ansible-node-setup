@@ -58,12 +58,12 @@
   become: true
   remote_user: "{{ user.name }}"
   tasks:
-    - name: 'Create headscale system user'
+    - name: 'Create alertmanager system user'
       ansible.builtin.user:
         name: "{{ alertmanager_system_user }}"
         system: true
         shell: /usr/sbin/nologin
-        home: /var/lib/headscale
+        home: /var/lib/alertmanager
         create_home: false
         groups: []
 
@@ -143,44 +143,6 @@
     - name: 'Import headplane service role'
       ansible.builtin.import_role:
         name: headplane_service
-
-- name: 'Setup Grafana OAuth2 Proxy'
-  hosts: headplane_servers
-  become: true
-  remote_user: "{{ user.name }}"
-  tasks:
-    - name: 'Import oauth2 proxy role for grafana'
-      ansible.builtin.import_role:
-        name: oauth2_proxy
-      vars:
-        oauth2_proxy_name: grafana
-        oauth2_proxy_port: "{{ grafana_oauth2_port }}"
-        oauth2_proxy_client_id: "{{ grafana_oauth2_client_id }}"
-        oauth2_proxy_client_secret: "{{ grafana_oauth2_client_secret }}"
-        oauth2_proxy_domains: "{{ grafana_domains }}"
-        oauth2_proxy_upstreams: ["http://127.0.0.1:{{ grafana_service_port }}/"]
-        oauth2_proxy_authenticated_emails: ["{{ user.email }}"]
-        oauth2_proxy_redirect_url: "https://{{ grafana_domains[0] }}/oauth2/callback"
-        oauth2_proxy_http_address: "127.0.0.1:{{ grafana_oauth2_port }}"
-
-- name: 'Setup Headplane OAuth2 Proxy'
-  hosts: headplane_servers
-  become: true
-  remote_user: "{{ user.name }}"
-  tasks:
-    - name: 'Import oauth2 proxy role for headplane'
-      ansible.builtin.import_role:
-        name: oauth2_proxy
-      vars:
-        oauth2_proxy_name: headplane
-        oauth2_proxy_port: "{{ headplane_oauth2_port }}"
-        oauth2_proxy_client_id: "{{ headplane_oauth2_client_id }}"
-        oauth2_proxy_client_secret: "{{ headplane_oauth2_client_secret }}"
-        oauth2_proxy_domains: "{{ headplane_domains }}"
-        oauth2_proxy_upstreams: ["http://127.0.0.1:{{ headplane_service_port }}/"]
-        oauth2_proxy_authenticated_emails: ["{{ user.email }}"]
-        oauth2_proxy_redirect_url: "https://{{ headplane_domains[0] }}/oauth2/callback"
-        oauth2_proxy_http_address: "127.0.0.1:{{ headplane_oauth2_port }}"
 
 - name: 'Tune SSH'
   hosts: headplane_servers

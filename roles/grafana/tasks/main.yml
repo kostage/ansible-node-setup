@@ -1,9 +1,42 @@
 ---
 # Grafana service role - Installs Grafana, creates SSL certificate, and configures nginx
 
+- name: 'Download Grafana GPG key locally to bypass geo-blocking'
+  become: false
+  delegate_to: localhost
+  ansible.builtin.get_url:
+    url: https://apt.grafana.com/gpg.key
+    dest: /tmp/grafana.gpg.key
+    mode: '0644'
+  register: grafana_key_download
+  ignore_errors: true
+
+- name: 'Copy Grafana GPG key to target server at expected location'
+  become: true
+  ansible.builtin.copy:
+    src: /tmp/grafana.gpg.key
+    dest: /usr/share/keyrings/grafana.key
+    mode: '0644'
+  when: grafana_key_download is succeeded or grafana_key_download.dest is defined
+
+- name: 'Add Grafana repository manually (to bypass geo-blocking)'
+  become: true
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/grafana.key] https://apt.grafana.com stable main"
+    state: present
+    update_cache: false
+  when: grafana_key_download is succeeded or grafana_key_download.dest is defined
+
+- name: 'Update apt cache'
+  become: true
+  ansible.builtin.apt:
+    update_cache: true
+  when: grafana_key_download is succeeded or grafana_key_download.dest is defined
+
 - name: 'Import Grafana installation role'
   ansible.builtin.import_role:
     name: grafana.grafana.grafana
+  when: grafana_key_download is succeeded or grafana_key_download.dest is defined
 
 - name: 'Create SSL certificate for Grafana'
   ansible.builtin.import_role:

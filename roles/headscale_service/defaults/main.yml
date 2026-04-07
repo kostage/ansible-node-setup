@@ -10,7 +10,7 @@ headscale_version: "0.26.1"
 headscale_config_dir: "/etc/headscale"
 headscale_data_dir: "/var/lib/headscale"
 headscale_log_dir: "/var/log/headscale"
-headscale_socket_dir: "/var/run/headscale"
+headscale_socket_dir: "/run/headscale"
 
 # Network configuration
 headscale_server_url: "http://127.0.0.1:4444"

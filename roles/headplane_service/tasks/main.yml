@@ -18,6 +18,28 @@
     enabled: true
     state: restarted
 
+- name: 'Install apache2-utils for htpasswd'
+  become: true
+  ansible.builtin.apt:
+    name:
+      - apache2-utils
+    state: present
+
+- name: 'Create htpasswd file for nginx basic auth'
+  become: true
+  ansible.builtin.shell:
+    cmd: |
+      htpasswd -bc /etc/nginx/.htpasswd-headplane {{ headplane_basic_auth_user }} {{ headplane_basic_auth_password }}
+    creates: /etc/nginx/.htpasswd-headplane
+
+- name: 'Set htpasswd file permissions'
+  become: true
+  ansible.builtin.file:
+    path: /etc/nginx/.htpasswd-headplane
+    owner: root
+    group: www-data
+    mode: '0644'
+
 - name: 'Create SSL certificate for Headplane'
   ansible.builtin.import_role:
     name: certbot

@@ -8,11 +8,11 @@ StartLimitIntervalSec=0
 Type=simple
 User=headplane
 Group=headplane
-WorkingDirectory={{ headplane_build_dir }}
+WorkingDirectory={{ headplane_install_dir }}
 Environment="PATH={{ headplane_node_path | dirname }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 Environment="NVM_DIR=/home/headplane/.nvm"
 Environment="HOME=/home/headplane"
-ExecStart={{ headplane_node_path }} {{ headplane_build_dir }}/build/server/index.js
+ExecStart={{ headplane_node_path }} {{ headplane_install_dir }}/build/server/index.js
 Restart=on-failure
 RestartSec=5s
 
@@ -21,7 +21,7 @@ ProtectSystem=strict
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=false
-ReadWritePaths={{ headplane_build_dir }} {{ headplane_data_dir }} {{ headplane_log_dir }} {{ headplane_config_dir }} {{ headscale_socket_dir }}
+ReadWritePaths={{ headplane_install_dir }} {{ headplane_data_dir }} {{ headplane_log_dir }} {{ headplane_config_dir }} {{ headscale_socket_dir }}
 ProtectHostname=true
 ProtectKernelModules=true
 ProtectKernelTunables=true
