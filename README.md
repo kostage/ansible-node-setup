@@ -375,11 +375,3 @@ apt-cache policy grafana
 sudo mkdir -p /var/lib/apt/lists
 sudo apt-get update
 ```
-
-### Misc
-```
-ssh-add -D
-ssh-keygen -R 70.34.250.23
-ssh-copy-id -i ~/Doroshenko/nodes/vultrssh.pub root@70.34.250.23
-ssh-add ~/Doroshenko/nodes/vultrssh
-```
