@@ -186,3 +186,13 @@ ssl_email: "admin@example.com"
 - **Architecture**: Completely flat structure with explicit steps
 - **Features**: Every setup step visible, no abstraction layers
 - **Authentication**: Grafana uses basic authentication (same password as non-root user)
+
+## Misc tips
+
+### Enable tailscale custom coordinator on GliNet router
+
+patch /usr/bin/gl_tailscale
+
+```
+timeout 10 /usr/sbin/tailscale up --login-server https://headscale.example.com --reset --accept-routes $param --timeout 3s --accept-dns=false > /dev/null
+```
