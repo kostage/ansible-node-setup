@@ -126,7 +126,8 @@ This repository uses a completely flat architecture with no loops or aggregators
 
 #### Service-Specific Roles
 - **`headscale_service`** - Headscale VPN coordination server
-- **`grafana.grafana.grafana`** - Grafana monitoring dashboards (community role)
+- **`grafana.grafana.grafana`** - Grafana monitoring dashboards (community role, native installation)
+- **`grafana_container`** - Grafana monitoring dashboards using Podman Quadlet (rootless containers)
 
 ### Flat Variable Structure
 
@@ -186,3 +187,154 @@ ssl_email: "admin@example.com"
 - **Architecture**: Completely flat structure with explicit steps
 - **Features**: Every setup step visible, no abstraction layers
 - **Authentication**: Grafana uses basic authentication (same password as non-root user)
+
+### test_grafana_container.yml
+- **Purpose**: Test Grafana deployment using Podman Quadlet (rootless containers)
+- **Services**: Grafana container with Podman, optional NGINX reverse proxy
+- **Requirements**: Podman 5.0+ (will be installed automatically)
+- **Features**:
+  - Rootless container deployment
+  - Named volume for data persistence
+  - User-scoped systemd service with lingering
+  - Health checks and automatic restarts
+  - Optional SSL certificates and NGINX reverse proxy
+
+## Podman Quadlet for Grafana
+
+This repository now supports deploying Grafana using Podman Quadlet, which provides rootless container management with systemd integration.
+
+### Prerequisites
+
+The role will automatically install Podman 5.0+ if not present. The following will be configured:
+- Podman and required dependencies
+- Unprivileged user with lingering enabled
+- Quadlet directory structure
+- Named volume for data persistence
+- User-scoped systemd service
+
+### Role Variables
+
+Key variables for `grafana_container` role:
+
+```yaml
+# Grafana administration (use KeePass lookups in production)
+grafana_admin_user: "admin"
+grafana_admin_password: "changeme"
+
+# Domains for SSL certificates (optional)
+grafana_domains:
+  - "grafana.example.com"
+  - "www.grafana.example.com"
+
+# Grafana configuration (grafana.ini format)
+grafana_ini_config:
+  security:
+    admin_user: "{{ grafana_admin_user }}"
+    admin_password: "{{ grafana_admin_password }}"
+    cookie_secure: true
+    cookie_samesite: "lax"
+    disable_gravatar: true
+```
+
+### Testing the Grafana Container Role
+
+1. **Create inventory file** (e.g., `test_inventory.yml`):
+```yaml
+test_servers:
+  hosts:
+    your-test-server.example.com:
+      ansible_user: your_ssh_user
+      ansible_become: true
+```
+
+2. **Configure variables** in `host_vars/your-test-server.yml`:
+```yaml
+# Use KeePass for credentials in production
+grafana_admin_user: "admin"
+grafana_admin_password: "secure_password_here"
+
+grafana_domains:
+  - "grafana.example.com"
+
+letsencrypt_email: "admin@example.com"
+```
+
+3. **Run the test playbook**:
+```bash
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+env no_proxy='*' ansible-playbook playbooks/test_grafana_container.yml -i test_inventory.yml --ask-vault-password
+```
+
+4. **Verify deployment**:
+```bash
+# Check container status (as root)
+ssh your-test-server
+sudo -u grafana systemctl --user status grafana
+
+# Check container logs
+sudo -u grafana journalctl --user -u grafana -f
+
+# Check running containers
+sudo -u grafana podman ps
+
+# View Grafana logs
+sudo -u grafana podman logs grafana
+```
+
+5. **Access Grafana**:
+- HTTP: `http://your-server-ip:3000`
+- HTTPS (with SSL): `https://grafana.example.com`
+- Default credentials: `admin` / `changeme` (change immediately!)
+
+### Troubleshooting Podman Quadlet
+
+**Container won't start:**
+```bash
+# Check service status
+sudo -u grafana systemctl --user status grafana
+
+# View logs
+sudo -u grafana journalctl --user -u grafana -n 50 --no-pager
+
+# Check Quadlet file
+sudo -u grafana cat ~/.config/containers/systemd/grafana.container
+```
+
+**Permission issues:**
+```bash
+# Check user permissions
+sudo -u grafana podman ps
+
+# Verify volume ownership
+sudo -u grafana podman volume inspect grafana-data
+```
+
+**SELinux issues (if enabled):**
+```bash
+# Check SELinux context
+ls -Z /var/lib/grafana
+
+# Add :Z to volume mounts in Quadlet file (already included)
+```
+
+**Data persistence:**
+```bash
+# Backup Grafana data
+sudo -u grafana podman volume export grafana-data > grafana-backup.tar
+
+# Restore Grafana data
+sudo -u grafana podman volume import grafana-data < grafana-backup.tar
+```
+
+### Differences: Native vs Container Grafana
+
+| Feature | Native Installation | Container (Quadlet) |
+|---------|-------------------|---------------------|
+| **Installation Method** | Apt packages | Podman image |
+| **Service Scope** | System systemd | User systemd |
+| **User Context** | grafana system user | Unprivileged user with linger |
+| **Data Storage** | System directories | Named Podman volume |
+| **Configuration** | `/etc/grafana/grafana.ini` | Mounted config file |
+| **Updates** | `apt upgrade` | Image pull and recreate |
+| **Isolation** | None | Container namespace |
+| **Resource Limits** | System-level | Per-container limits |

@@ -1,0 +1,313 @@
+---
+# Grafana Container Role - Main Tasks
+# Deploys Grafana using Podman Quadlet (rootless containers)
+
+# ============================================================
+# PODMAN INSTALLATION AND SETUP
+# ============================================================
+
+- name: Display deployment information
+  ansible.builtin.debug:
+    msg:
+      - "=========================================="
+      - " Grafana Container Deployment"
+      - "=========================================="
+      - "Target host: {{ inventory_hostname }}"
+      - "Grafana user: {{ grafana_admin_user }}"
+      - "Domains: {{ grafana_domains | default(['none']) | join(', ') }}"
+      - "Container port: {{ grafana_container_port }}"
+      - "=========================================="
+
+- name: Display system information
+  ansible.builtin.debug:
+    msg:
+      - "OS: {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}"
+      - "Architecture: {{ ansible_facts.architecture }}"
+      - "Memory: {{ ansible_facts.memtotal_mb }} MB"
+      - "CPUs: {{ ansible_facts.processor_vcpus }}"
+
+- name: Check if Podman is installed
+  ansible.builtin.command:
+    cmd: which podman
+  register: podman_check
+  failed_when: false
+  changed_when: false
+
+- name: Get Podman version
+  ansible.builtin.command:
+    cmd: podman --version
+  register: podman_version
+  failed_when: false
+  changed_when: false
+  when: podman_check.rc == 0
+
+- name: Parse Podman version
+  ansible.builtin.set_fact:
+    podman_installed_version: "{{ podman_version.stdout | regex_replace('podman version ', '') }}"
+  when: podman_check.rc == 0 and podman_version.rc == 0
+
+- name: Display Podman version information
+  ansible.builtin.debug:
+    msg:
+      - "Podman installed: {{ podman_check.rc == 0 }}"
+      - "Installed version: {{ podman_installed_version | default('N/A') }}"
+      - "Required minimum version: {{ grafana_podman_version_minimum }}"
+
+- name: Install Podman and dependencies
+  block:
+    - name: Install Podman from official repositories
+      block:
+        - name: Detect OS family
+          ansible.builtin.set_fact:
+            os_family: "{{ ansible_facts.os_family }}"
+
+        - name: Install Podman on Debian/Ubuntu
+          ansible.builtin.apt:
+            name:
+              - podman
+              - podman-plugins
+              - conmon
+              - slirp4netns
+              - fuse-overlayfs
+              - uidmap
+            state: present
+            update_cache: yes
+          when: os_family == "Debian"
+
+        - name: Install Podman on RedHat/CentOS/Fedora
+          ansible.builtin.dnf:
+            name:
+              - podman
+              - podman-plugins
+              - conmon
+              - slirp4netns
+              - fuse-overlayfs
+            state: present
+          when: os_family == "RedHat"
+
+      become: true
+
+    - name: Verify Podman installation
+      ansible.builtin.command:
+        cmd: podman --version
+      register: podman_install_verify
+      changed_when: false
+
+    - name: Display installed Podman version
+      ansible.builtin.debug:
+        msg: "Podman {{ podman_install_verify.stdout }} installed successfully"
+
+  when:
+    - podman_check.rc != 0 or podman_installed_version | default('0.0.0') is version(grafana_podman_version_minimum, '<')
+
+# ============================================================
+# GRAFANA USER AND DIRECTORY SETUP
+# ============================================================
+
+- name: Create Grafana system user
+  ansible.builtin.user:
+    name: "{{ grafana_container_user }}"
+    uid: "{{ grafana_container_uid }}"
+    group: "{{ grafana_container_gid }}"
+    shell: "{{ grafana_container_shell }}"
+    home: "{{ grafana_container_home }}"
+    create_home: true
+    system: true
+    comment: "Grafana Container User"
+  become: true
+
+- name: Enable user lingering for Grafana user
+  ansible.builtin.command:
+    cmd: "loginctl enable-linger {{ grafana_container_user }}"
+  become: true
+  changed_when: true
+
+# ============================================================
+# QUADLET CONFIGURATION
+# ============================================================
+
+- name: Create Quadlet directory structure
+  ansible.builtin.file:
+    path: "{{ grafana_container_home }}/{{ grafana_container_quadlet_dir }}"
+    state: directory
+    owner: "{{ grafana_container_user }}"
+    group: "{{ grafana_container_gid }}"
+    mode: '0755'
+  become: true
+
+- name: Create Grafana configuration directory
+  ansible.builtin.file:
+    path: "{{ grafana_container_home }}/config"
+    state: directory
+    owner: "{{ grafana_container_user }}"
+    group: "{{ grafana_container_gid }}"
+    mode: '0755'
+  become: true
+
+- name: Generate Grafana configuration file
+  ansible.builtin.template:
+    src: grafana.ini.j2
+    dest: "{{ grafana_container_home }}/grafana.ini"
+    owner: "{{ grafana_container_user }}"
+    group: "{{ grafana_container_gid }}"
+    mode: '0640'
+  become: true
+
+- name: Create named volume definition for Grafana data
+  ansible.builtin.copy:
+    content: |
+      [Volume]
+      VolumeName={{ grafana_container_volume_name }}
+    dest: "{{ grafana_container_home }}/{{ grafana_container_quadlet_dir }}/{{ grafana_container_volume_name }}.volume"
+    owner: "{{ grafana_container_user }}"
+    group: "{{ grafana_container_gid }}"
+    mode: '0644'
+  become: true
+  notify:
+    - Reload systemd daemon
+    - Restart Grafana container
+
+- name: Generate Grafana Quadlet container file
+  ansible.builtin.template:
+    src: grafana.container.j2
+    dest: "{{ grafana_container_home }}/{{ grafana_container_quadlet_dir }}/{{ grafana_container_name }}.container"
+    owner: "{{ grafana_container_user }}"
+    group: "{{ grafana_container_gid }}"
+    mode: '0644'
+  become: true
+  notify:
+    - Reload systemd daemon
+    - Restart Grafana container
+
+# ============================================================
+# SERVICE DEPLOYMENT
+# ============================================================
+
+- name: Flush handlers to ensure systemd is reloaded before starting service
+  ansible.builtin.meta: flush_handlers
+
+- name: Check if Grafana container service exists
+  ansible.builtin.command:
+    cmd: "systemctl --user is-active {{ grafana_container_name }}"
+  register: grafana_service_status
+  failed_when: false
+  changed_when: false
+  become_user: "{{ grafana_container_user }}"
+
+- name: Enable and start Grafana container service
+  ansible.builtin.systemd:
+    name: "{{ grafana_container_name }}"
+    state: started
+    enabled: true
+    scope: user
+    daemon_reload: true
+  become_user: "{{ grafana_container_user }}"
+  register: service_start_result
+
+- name: Wait for Grafana to be ready
+  ansible.builtin.wait_for:
+    host: "localhost"
+    port: "{{ grafana_container_port }}"
+    delay: 10
+    timeout: 120
+    state: started
+
+- name: Check Grafana container status
+  ansible.builtin.command:
+    cmd: "systemctl --user status {{ grafana_container_name }}"
+  become_user: "{{ grafana_container_user }}"
+  register: grafana_status
+  changed_when: false
+
+- name: Display Grafana service status
+  ansible.builtin.debug:
+    var: grafana_status.stdout_lines
+
+- name: Verify Grafana is responding
+  ansible.builtin.uri:
+    url: "http://localhost:{{ grafana_container_port }}/api/health"
+    method: GET
+    return_content: true
+  register: grafana_health
+  until: grafana_health.status == 200
+  retries: 10
+  delay: 5
+  failed_when: false
+
+- name: Display Grafana health check result
+  ansible.builtin.debug:
+    msg: "Grafana is {{ 'healthy' if grafana_health.status == 200 else 'not responding' }}"
+
+# ============================================================
+# SSL AND REVERSE PROXY SETUP
+# ============================================================
+
+- name: Setup SSL certificates
+  ansible.builtin.import_role:
+    name: certbot
+  vars:
+    certbot_domains: "{{ grafana_domains }}"
+    certbot_create_email: "{{ letsencrypt_email | default('admin@' + grafana_domains[0]) }}"
+  when:
+    - grafana_domains is defined
+    - grafana_domains | length > 0
+
+- name: Setup NGINX reverse proxy
+  ansible.builtin.import_role:
+    name: nginx_config
+  vars:
+    nginx_config_server_name: "{{ grafana_domains[0] if grafana_domains | length > 0 else ansible_facts.fqdn }}"
+    nginx_config_proxy_pass: "http://localhost:{{ grafana_container_port }}"
+    nginx_config_ssl_enabled: true
+    nginx_config_security_headers: "{{ grafana_nginx_security_headers }}"
+  when:
+    - grafana_domains is defined
+    - grafana_domains | length > 0
+
+# ============================================================
+# POST-DEPLOYMENT SUMMARY
+# ============================================================
+
+- name: Display deployment summary
+  ansible.builtin.debug:
+    msg:
+      - "=========================================="
+      - " Grafana Container Deployment Complete"
+      - "=========================================="
+      - "Container name: {{ grafana_container_name }}"
+      - "Access via HTTP: http://{{ ansible_facts.default_ipv4.address | default('localhost') }}:{{ grafana_container_port }}"
+      - "Access via HTTPS: {% if grafana_domains is defined and grafana_domains | length > 0 %}https://{{ grafana_domains[0] }}{% else %}Not configured{% endif %}"
+      - "Admin user: {{ grafana_admin_user }}"
+      - "=========================================="
+      - "Service Management:"
+      - "  Check status: sudo -u {{ grafana_container_user }} systemctl --user status {{ grafana_container_name }}"
+      - "  View logs: sudo -u {{ grafana_container_user }} journalctl --user -u {{ grafana_container_name }} -f"
+      - "  Restart: sudo -u {{ grafana_container_user }} systemctl --user restart {{ grafana_container_name }}"
+      - "=========================================="
+      - "Container Management:"
+      - "  List containers: sudo -u {{ grafana_container_user }} podman ps"
+      - "  View logs: sudo -u {{ grafana_container_user }} podman logs {{ grafana_container_name }}"
+      - "  Exec shell: sudo -u {{ grafana_container_user }} podman exec -it {{ grafana_container_name }} sh"
+      - "=========================================="
+
+- name: Display container information
+  ansible.builtin.command:
+    cmd: "podman ps --filter 'name={{ grafana_container_name }}' --format 'table {{ .ID }}\t{{ .Names }}\t{{ .Status }}\t{{ .Ports }}'"
+  become_user: "{{ grafana_container_user }}"
+  register: container_info
+  changed_when: false
+
+- name: Display container details
+  ansible.builtin.debug:
+    var: container_info.stdout_lines
+
+- name: Verify final service status
+  ansible.builtin.command:
+    cmd: "systemctl --user is-active {{ grafana_container_name }}"
+  become_user: "{{ grafana_container_user }}"
+  register: final_service_status
+  changed_when: false
+
+- name: Display final status
+  ansible.builtin.debug:
+    msg: "Grafana container service is: {{ final_service_status.stdout | default('unknown') }}"

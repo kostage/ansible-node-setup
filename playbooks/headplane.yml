@@ -117,14 +117,14 @@
       ansible.builtin.import_role:
         name: prometheus.prometheus.alertmanager
 
-- name: 'Install Grafana'
+- name: 'Install Grafana Container'
   hosts: headplane_servers
   become: true
   remote_user: "{{ user.name }}"
   tasks:
-    - name: 'Import grafana service role'
+    - name: 'Import grafana container role'
       ansible.builtin.import_role:
-        name: grafana
+        name: grafana_container
 
 - name: 'Install Headscale'
   hosts: headplane_servers

@@ -75,27 +75,38 @@ headplane_basic_auth_user: "{{ user.name }}"
 headplane_basic_auth_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
 headplane_domain: "headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
 
-# Grafana configuration
+# Grafana Container configuration
 grafana_admin_user: "{{ lookup('keepass', 'headplane/user', 'username') }}"
 grafana_admin_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
-grafana_system_user: "grafana"
-grafana_system_uid: 472
+grafana_container_user: "grafana"
+grafana_container_uid: 472
+grafana_container_gid: 472
 grafana_domains:
   - "dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
   - "www.dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
-grafana_service_port: 3000
+grafana_primary_domain: "dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
 
-# Disable built-in repository management (we handle it manually due to geo-blocking)
-grafana_manage_repo: false
-
-# Grafana configuration using new grafana_ini structure (grafana.grafana >= 6.0.0)
-grafana_ini:
+# Grafana configuration for container deployment
+grafana_ini_config:
+  server:
+    http_port: 3000
+    root_url: "%(protocol)s://%(domain)s/"
   security:
     admin_user: "{{ lookup('keepass', 'headplane/user', 'username') }}"
     admin_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
     cookie_secure: true
-    cookie_samesite: lax
+    cookie_samesite: "lax"
     disable_gravatar: true
     content_security_policy: true
     x_content_type_options: true
     x_xss_protection: true
+    strict_transport_security: true
+    strict_transport_security_max_age: "86400"
+  users:
+    viewers_can_edit: false
+  auth:
+    disable_login_form: false
+  database:
+    type: "sqlite3"
+    path: "var/lib/grafana/grafana.db"
+

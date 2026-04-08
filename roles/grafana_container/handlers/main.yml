@@ -1,0 +1,15 @@
+---
+# Handlers for Grafana Container role
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+    scope: user
+  become_user: "{{ grafana_container_user }}"
+
+- name: Restart Grafana container
+  ansible.builtin.systemd:
+    name: "{{ grafana_container_name }}"
+    state: restarted
+    scope: user
+  become_user: "{{ grafana_container_user }}"
