@@ -338,3 +338,12 @@ sudo -u grafana podman volume import grafana-data < grafana-backup.tar
 | **Updates** | `apt upgrade` | Image pull and recreate |
 | **Isolation** | None | Container namespace |
 | **Resource Limits** | System-level | Per-container limits |
+## Misc tips
+
+### Enable tailscale custom coordinator on GliNet router
+
+patch /usr/bin/gl_tailscale
+
+```
+timeout 10 /usr/sbin/tailscale up --login-server https://headscale.example.com --reset --accept-routes $param --timeout 3s --accept-dns=false > /dev/null
+```
