@@ -29,7 +29,7 @@
   ansible.posix.authorized_key:
     user: "{{ user.name }}"
     state: present
-    key: '/home/{{ user.name }}/.ssh/{{ user.ssh_key_file }}.pub'
+    key: "{{ lookup('file', '{{ user.ssh_key_path }}/{{ user.ssh_key_file }}.pub') }}"
 
 - name: Configure passwordless sudo for user
   ansible.builtin.copy:
