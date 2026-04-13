@@ -4,18 +4,18 @@
     name: '{{ user.name }}'
     password: "{{ user.password | password_hash('sha512') }}"
     generate_ssh_key: true
-    ssh_key_file: '.ssh/{{ user.name }}_id_rsa'
-    ssh_key_type: '{{ user_ssh_key_type }}'
+    ssh_key_file: '.ssh/{{ user.ssh_key_file }}'
+    ssh_key_type: '{{ ssh_key_type }}'
     groups: "sudo"
     append: true
     state: present
     shell: /bin/bash
     update_password: always
 
-- name: Create backup folder
+- name: Create key folder
   local_action:
     module: file
-    path: "{{ user.sshkey_save_path }}/"
+    path: "{{ user.ssh_key_path }}/"
     state: directory
 
 - name: Copy keys to local machine
@@ -23,13 +23,13 @@
     mode: pull
     checksum: true
     src: "/home/{{ user.name }}/.ssh/"
-    dest: "{{ user.sshkey_save_path }}/"
+    dest: "{{ user.ssh_key_path }}/"
 
 - name: Deploy SSH Public Key
   ansible.posix.authorized_key:
     user: "{{ user.name }}"
     state: present
-    key: "{{ lookup('file', '{{ user.sshkey_save_path }}/{{ user.name }}_id_rsa.pub') }}"
+    key: '/home/{{ user.name }}/.ssh/{{ user.ssh_key_file }}.pub'
 
 - name: Configure passwordless sudo for user
   ansible.builtin.copy:

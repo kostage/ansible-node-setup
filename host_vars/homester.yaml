@@ -1,13 +1,17 @@
 ---
 ssh_port: 22
 
-ansible_become_password: "{{ lookup('keepass', 'homester/node', 'password') }}"
+ansible_become_password: "{{ lookup('keepass', 'homester/root', 'password') }}"
+
+# SSH key paths for different connection stages
+ssh_root_key_path: '/Users/kostage/Doroshenko/nodes/hetzner'
 
 user:
-  name: "{{ lookup('keepass', 'homester/node', 'username') }}"
-  password: "{{ lookup('keepass', 'homester/node', 'password') }}"
-  sshkey_save_path: '/Users/kostage/Doroshenko/nodes/homester/ssh'
-  ssh_key_type: ed25519
+  name: "{{ lookup('keepass', 'homester/user', 'username') }}"
+  password: "{{ lookup('keepass', 'homester/user', 'password') }}"
+  email: "{{ lookup('keepass', 'homester/email', 'password') }}"
+  ssh_key_path: "/Users/kostage/Doroshenko/nodes/{{ lookup('keepass', 'homester/user', 'username') }}/ssh/"
+  ssh_key_file: "{{ lookup('keepass', 'homester/user', 'username') }}_id_rsa" # & .pub 
 
 tlsgen_common_name: "{{ lookup('keepass', 'homester/ip', 'password') }}"
 tlsgen_sans:
@@ -17,10 +21,39 @@ node_exporter_tls_server_config:
   cert_file: '{{ tlsgen_remote_path }}/{{ tlsgen_cert_name }}'
   key_file: '{{ tlsgen_remote_path }}/{{ tlsgen_key_name }}'
 node_exporter_basic_auth_users:
-  prometheus: "{{ lookup('keepass', 'homester/node', 'password') }}"
+  prometheus: "{{ lookup('keepass', 'homester/user', 'password') }}"
 
+# Internal service ports
+http_port: 80
+
+# Firewall configuration
 firewall_rules:
   - rule: allow
     port: 9100 # nodexp
   - rule: allow
     port: 22
+  - rule: allow
+    port: 443
+  - rule: allow
+    port: 80
+
+# Package configuration
+apt_packages:
+  - curl
+  - wget
+  - git
+  - unzip
+  - python3
+  - python3-pip
+  - python3-debian
+  - software-properties-common
+  - build-essential
+
+# Grafana Container configuration
+# Host-specific variables that vary per host
+grafana_admin_user: "{{ lookup('keepass', 'homester/user', 'username') }}"
+grafana_admin_password: "{{ lookup('keepass', 'homester/user', 'password') }}"
+grafana_domains:
+  - "dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
+  - "www.dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
+grafana_primary_domain: "dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"

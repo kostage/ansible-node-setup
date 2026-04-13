@@ -1,6 +1,6 @@
 ---
 # Grafana Container Role - Default Variables
-# This role deploys Grafana using Podman Quadlet (rootless containers)
+# This role deploys Grafana using Podman with systemd system service
 
 # System user configuration
 grafana_container_user: "grafana"
@@ -15,7 +15,7 @@ grafana_container_name: "grafana"
 grafana_container_port: 3000
 
 # Data persistence
-grafana_container_volume_name: "grafana-data"
+grafana_container_data_dir: "/var/lib/grafana"
 
 # Grafana administration (should be overridden with KeePass lookups)
 grafana_admin_user: "admin"
@@ -51,7 +51,9 @@ grafana_ini_config:
 
 # Podman configuration
 grafana_podman_version_minimum: "5.0.0"
-grafana_container_quadlet_dir: ".config/containers/systemd"
+
+# Systemd service configuration
+grafana_service_file: "/etc/systemd/system/grafana.service"
 
 # SSL and reverse proxy
 grafana_nginx_ssl_protocols: "TLSv1.2 TLSv1.3"

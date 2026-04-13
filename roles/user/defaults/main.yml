@@ -1,1 +1,3 @@
-user_ssh_key_type: rsa
+# SSH key type is now defined in host_vars as user.ssh_key_type
+# Default fallback value (should be overridden in host_vars)
+ssh_key_type: ed25519

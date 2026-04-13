@@ -21,3 +21,5 @@ tlsgen_key_name: 'server.key'
 tlsgen_cert_name: 'server.crt'
 
 telegram_chat_id: "{{ lookup('keepass', 'telegram_bot/chat_id', 'password') | int }}"
+
+ssh_key_type: ed25519

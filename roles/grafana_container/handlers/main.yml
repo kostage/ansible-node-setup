@@ -4,12 +4,8 @@
 - name: Reload systemd daemon
   ansible.builtin.systemd:
     daemon_reload: true
-    scope: user
-  become_user: "{{ grafana_container_user }}"
 
-- name: Restart Grafana container
+- name: Restart Grafana service
   ansible.builtin.systemd:
-    name: "{{ grafana_container_name }}"
+    name: grafana
     state: restarted
-    scope: user
-  become_user: "{{ grafana_container_user }}"

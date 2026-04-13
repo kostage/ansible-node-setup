@@ -127,7 +127,7 @@ This repository uses a completely flat architecture with no loops or aggregators
 #### Service-Specific Roles
 - **`headscale_service`** - Headscale VPN coordination server
 - **`grafana.grafana.grafana`** - Grafana monitoring dashboards (community role, native installation)
-- **`grafana_container`** - Grafana monitoring dashboards using Podman Quadlet (rootless containers)
+- **`grafana_container`** - Grafana monitoring dashboards using Podman with systemd system service
 
 ### Flat Variable Structure
 
@@ -188,29 +188,39 @@ ssl_email: "admin@example.com"
 - **Features**: Every setup step visible, no abstraction layers
 - **Authentication**: Grafana uses basic authentication (same password as non-root user)
 
+### test_grafana.yml
+- **Purpose**: Test Grafana deployment on homester server
+- **Services**: User creation, packages, firewall, NGINX, Grafana container
+- **Target**: `vpn` host group (homester)
+- **Features**:
+  - Complete prerequisite setup (user, apt, firewall, NGINX)
+  - Grafana container using Podman with systemd service
+  - SSL certificate integration
+  - Based on headplane.yml but monitoring-only (no headscale/headplane)
+
 ### test_grafana_container.yml
-- **Purpose**: Test Grafana deployment using Podman Quadlet (rootless containers)
+- **Purpose**: Test Grafana deployment using Podman with systemd system service
 - **Services**: Grafana container with Podman, optional NGINX reverse proxy
 - **Requirements**: Podman 5.0+ (will be installed automatically)
 - **Features**:
-  - Rootless container deployment
-  - Named volume for data persistence
-  - User-scoped systemd service with lingering
+  - System service deployment
+  - Data directory for persistence
+  - System-scoped systemd service
   - Health checks and automatic restarts
   - Optional SSL certificates and NGINX reverse proxy
 
-## Podman Quadlet for Grafana
+## Podman Systemd Service for Grafana
 
-This repository now supports deploying Grafana using Podman Quadlet, which provides rootless container management with systemd integration.
+This repository now supports deploying Grafana using Podman with systemd system service, which provides container management with standard systemd integration.
 
 ### Prerequisites
 
 The role will automatically install Podman 5.0+ if not present. The following will be configured:
 - Podman and required dependencies
-- Unprivileged user with lingering enabled
-- Quadlet directory structure
-- Named volume for data persistence
-- User-scoped systemd service
+- Grafana system user (UID 472)
+- Data directory at `/var/lib/grafana`
+- Systemd service file in `/etc/systemd/system/grafana.service`
+- System-scoped systemd service
 
 ### Role Variables
 
@@ -235,6 +245,8 @@ grafana_ini_config:
     cookie_samesite: "lax"
     disable_gravatar: true
 ```
+
+Note: Configuration is passed to the container via environment variables, not via grafana.ini file.
 
 ### Testing the Grafana Container Role
 
@@ -267,12 +279,12 @@ env no_proxy='*' ansible-playbook playbooks/test_grafana_container.yml -i test_i
 
 4. **Verify deployment**:
 ```bash
-# Check container status (as root)
+# Check service status
 ssh your-test-server
-sudo -u grafana systemctl --user status grafana
+sudo systemctl status grafana
 
-# Check container logs
-sudo -u grafana journalctl --user -u grafana -f
+# Check service logs
+sudo journalctl -u grafana -f
 
 # Check running containers
 sudo -u grafana podman ps
@@ -286,18 +298,77 @@ sudo -u grafana podman logs grafana
 - HTTPS (with SSL): `https://grafana.example.com`
 - Default credentials: `admin` / `changeme` (change immediately!)
 
-### Troubleshooting Podman Quadlet
+### Testing the test_grafana.yml Playbook
+
+The `test_grafana.yml` playbook is designed to test a complete Grafana deployment with all prerequisites on the homester server.
+
+1. **Prerequisites**:
+   - Ensure KeePass database has entries for `homester/node` (username, password) and `homester/domain_name`
+   - Verify DNS A record points to homester server IP for `dashboard.<domain>`
+   - Activate ansible environment: `pyenv shell ansible`
+
+2. **Run the test playbook**:
+```bash
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+env no_proxy='*' ansible-playbook playbooks/test_grafana.yml -i hosts.yml --ask-vault-password
+```
+
+3. **Verify deployment**:
+```bash
+# SSH to homester server
+ssh homester
+
+# Check Grafana service status
+sudo systemctl status grafana
+
+# Check container is running
+sudo -u grafana podman ps
+
+# Check NGINX configuration
+sudo nginx -t
+
+# Check firewall rules
+sudo ufw status
+
+# View Grafana logs
+sudo journalctl -u grafana -n 50 --no-pager
+```
+
+4. **Access Grafana**:
+   - URL: `https://dashboard.<your-domain>`
+   - Credentials: Use KeePass `homester/node` credentials
+   - First login: You'll be prompted to change the password
+
+5. **Troubleshooting**:
+```bash
+# Check if all prerequisites are installed
+dpkg -l | grep -E "(nginx|podman|ufw)"
+
+# Verify SSL certificate
+sudo certbot certificates
+
+# Check NGINX reverse proxy
+sudo cat /etc/nginx/sites-available/dashboard.*
+
+# Test NGINX configuration
+sudo nginx -t && sudo systemctl reload nginx
+
+# Restart Grafana service if needed
+sudo systemctl restart grafana
+```
+
+### Troubleshooting Grafana Systemd Service
 
 **Container won't start:**
 ```bash
 # Check service status
-sudo -u grafana systemctl --user status grafana
+sudo systemctl status grafana
 
 # View logs
-sudo -u grafana journalctl --user -u grafana -n 50 --no-pager
+sudo journalctl -u grafana -n 50 --no-pager
 
-# Check Quadlet file
-sudo -u grafana cat ~/.config/containers/systemd/grafana.container
+# Check systemd service file
+sudo cat /etc/systemd/system/grafana.service
 ```
 
 **Permission issues:**
@@ -305,8 +376,8 @@ sudo -u grafana cat ~/.config/containers/systemd/grafana.container
 # Check user permissions
 sudo -u grafana podman ps
 
-# Verify volume ownership
-sudo -u grafana podman volume inspect grafana-data
+# Verify data directory ownership
+ls -la /var/lib/grafana
 ```
 
 **SELinux issues (if enabled):**
@@ -314,30 +385,31 @@ sudo -u grafana podman volume inspect grafana-data
 # Check SELinux context
 ls -Z /var/lib/grafana
 
-# Add :Z to volume mounts in Quadlet file (already included)
+# Add :Z to volume mounts in service file (already included)
 ```
 
 **Data persistence:**
 ```bash
 # Backup Grafana data
-sudo -u grafana podman volume export grafana-data > grafana-backup.tar
+sudo tar -czf grafana-backup.tar.gz -C /var/lib/grafana .
 
 # Restore Grafana data
-sudo -u grafana podman volume import grafana-data < grafana-backup.tar
+sudo tar -xzf grafana-backup.tar.gz -C /var/lib/grafana
 ```
 
 ### Differences: Native vs Container Grafana
 
-| Feature | Native Installation | Container (Quadlet) |
+| Feature | Native Installation | Container (Systemd Service) |
 |---------|-------------------|---------------------|
 | **Installation Method** | Apt packages | Podman image |
-| **Service Scope** | System systemd | User systemd |
-| **User Context** | grafana system user | Unprivileged user with linger |
-| **Data Storage** | System directories | Named Podman volume |
-| **Configuration** | `/etc/grafana/grafana.ini` | Mounted config file |
+| **Service Scope** | System systemd | System systemd |
+| **User Context** | grafana system user | grafana system user (dropped privileges) |
+| **Data Storage** | System directories | `/var/lib/grafana` directory |
+| **Configuration** | `/etc/grafana/grafana.ini` | Environment variables |
 | **Updates** | `apt upgrade` | Image pull and recreate |
 | **Isolation** | None | Container namespace |
 | **Resource Limits** | System-level | Per-container limits |
+| **Service File** | `/lib/systemd/system/grafana-server.service` | `/etc/systemd/system/grafana.service` |
 ## Misc tips
 
 ### Enable tailscale custom coordinator on GliNet router

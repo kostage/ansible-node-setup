@@ -1,6 +1,10 @@
+---
 - name: Create user with password and ssh key
-  hosts: homester
+  hosts: vpn
   remote_user: root
+  become: false
+  vars:
+    ansible_ssh_private_key_file: "{{ ssh_root_key_path }}"
   tasks:
     - name: 'Install rsync on remote'
       ansible.builtin.import_role:
@@ -8,82 +12,81 @@
       vars:
         apt_packages:
           - rsync
+      become: false
     - name: 'Create user'
       ansible.builtin.import_role:
         name: user
-      vars:
-        user_ssh_key_type: '{{ user.ssh_key_type }}'
   ignore_errors: true
   ignore_unreachable: true
 
 - name: 'Install packages'
-  hosts: homester
+  hosts: vpn
   remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
   tasks:
     - name: 'Import role'
       ansible.builtin.import_role:
         name: apt
 
-- name: Generate TLS cert
-  hosts: localhost
-  connection: local
+- name: 'Allow HTTP for letsencrypt challenge'
+  hosts: vpn
+  remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
   tasks:
+    - name: 'Import firewall role'
+      ansible.builtin.import_role:
+        name: firewall
+      vars:
+        firewall_rules:
+          - rule: allow
+            port: "{{ http_port }}"
+
+- name: 'Install NGINX'
+  hosts: vpn
+  become: true
+  remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
+  tasks:
+    - name: 'Install gnupg for apt-key support'
+      ansible.builtin.apt:
+        name:
+          - gnupg
+          - curl
+        state: present
+
     - name: 'Import role'
       ansible.builtin.import_role:
-        name: tlsgen
-      vars:
-        tlsgen_common_name: "{{ hostvars['homester'].tlsgen_common_name }}"
-        tlsgen_sans: "{{ hostvars['homester'].tlsgen_sans }}"
+        name: nginxinc.nginx
 
-- name: Create node TLS dir
-  hosts: homester
-  remote_user: "{{ user.name }}"
+- name: 'Install Grafana Container'
+  hosts: vpn
   become: true
-  tasks:
-    - name: 'File'
-      ansible.builtin.file:
-        path: '{{ tlsgen_remote_path }}'
-        state: directory
-        owner: root
-        group: root
-        mode: 'u=rwx,g=rwx,o=rx'
-
-- name: Transfer TLS files to remote
-  hosts: homester
   remote_user: "{{ user.name }}"
-  become: true
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
   tasks:
-    - name: 'Copy'
-      ansible.builtin.copy:
-        src: '{{ item }}'
-        dest: '{{ tlsgen_remote_path }}'
-        owner: root
-        group: root
-        mode: 'u=rw,g=rw,o=r'
-        force: true
-      with_items:
-        - '{{ tlsgen_path }}/{{ tlsgen_cert_name }}'
-        - '{{ tlsgen_path }}/{{ tlsgen_key_name }}'
-
-- name: 'Install Node Exporter'
-  hosts: homester
-  remote_user: "{{ user.name }}"
-  tasks:
-    - name: 'Import node_exporter role'
+    - name: 'Import grafana container role'
       ansible.builtin.import_role:
-        name: prometheus.prometheus.node_exporter
+        name: grafana_container
 
 - name: 'Tune SSH'
-  hosts: homester
+  hosts: vpn
   remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
   tasks:
     - name: 'Import role'
       ansible.builtin.import_role:
         name: ssh
 
 - name: 'Configure firewall'
-  hosts: homester
+  hosts: vpn
   remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
   tasks:
     - name: 'Import role'
       ansible.builtin.import_role:
