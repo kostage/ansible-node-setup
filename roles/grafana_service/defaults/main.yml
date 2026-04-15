@@ -1,0 +1,45 @@
+---
+# Grafana Service Role Defaults
+
+# User and group
+grafana_user: grafana
+grafana_group: grafana
+
+# Grafana version (leave empty for latest)
+grafana_version: ""
+
+# Installation method
+grafana_install_method: repo
+grafana_repo_url: https://apt.grafana.com/gpg.key
+grafana_repo: "deb https://apt.grafana.com stable main"
+
+# Service configuration
+grafana_service_name: grafana-server
+grafana_port: 3000
+
+# Directories
+grafana_config_dir: /etc/grafana
+grafana_data_dir: /var/lib/grafana
+grafana_log_dir: /var/log/grafana
+grafana_plugins_dir: /var/lib/grafana/plugins
+grafana_provisioning_dir: /etc/grafana/provisioning
+
+# Domains (should be defined in host_vars)
+# grafana_domains:
+#   - dashboard.example.com
+#   - www.dashboard.example.com
+# grafana_primary_domain: dashboard.example.com
+
+# Admin credentials (should come from KeePass)
+# grafana_admin_user: admin
+# grafana_admin_password: secret
+
+# Grafana.ini configuration
+grafana_server_section:
+  http_addr: "127.0.0.1"
+  http_port: "{{ grafana_port }}"
+  domain: "{{ grafana_primary_domain }}"
+
+grafana_security_section:
+  admin_user: "{{ grafana_admin_user }}"
+  admin_password: "{{ grafana_admin_password }}"

@@ -61,16 +61,16 @@
       ansible.builtin.import_role:
         name: nginxinc.nginx
 
-- name: 'Install Grafana Container'
+- name: 'Install Grafana (Native Installation)'
   hosts: vpn
   become: true
   remote_user: "{{ user.name }}"
   vars:
     ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
   tasks:
-    - name: 'Import grafana container role'
+    - name: 'Import grafana service role'
       ansible.builtin.import_role:
-        name: grafana_container
+        name: grafana_service
 
 - name: 'Tune SSH'
   hosts: vpn

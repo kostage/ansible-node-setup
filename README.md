@@ -2,6 +2,18 @@
 
 This repository uses a modular role architecture for managing web services including Grafana and Headscale. The architecture eliminates code duplication and provides consistent configuration patterns across all services.
 
+## SSH Connection Troubleshooting
+
+If you cannot SSH to a server after running a playbook (e.g., "Too many authentication failures"), this is typically caused by having too many SSH keys loaded in your SSH agent. The SSH client tries all keys until the server disconnects after too many failed attempts.
+
+### Solution
+
+Add `IdentitiesOnly=yes` to your SSH command to only use the specified identity file:
+
+```bash
+ssh -o IdentitiesOnly=yes -i /path/to/your_key user@host
+```
+
 ## Quick Start
 
 ### Python Virtual Environment Setup
@@ -45,6 +57,8 @@ brew install gnu-tar
 # Install KeePass lookup plugin locally
 cp ~/.ansible/collections/ansible_collections/viczem/keepass/plugins/lookup/keepass.py ~/.ansible/plugins/lookup
 ```
+
+**Note:** The Grafana role now downloads the GPG key directly on the target server, so there's no need for local workarounds.
 
 ## Complete Environment Setup from Scratch
 
@@ -126,8 +140,8 @@ This repository uses a completely flat architecture with no loops or aggregators
 
 #### Service-Specific Roles
 - **`headscale_service`** - Headscale VPN coordination server
-- **`grafana.grafana.grafana`** - Grafana monitoring dashboards (community role, native installation)
-- **`grafana_container`** - Grafana monitoring dashboards using Podman with systemd system service
+- **`grafana_service`** - Grafana monitoring dashboards using grafana.grafana collection with native installation
+- **`grafana_container`** - Grafana monitoring dashboards using Podman with systemd system service (legacy)
 
 ### Flat Variable Structure
 
@@ -397,6 +411,204 @@ sudo tar -czf grafana-backup.tar.gz -C /var/lib/grafana .
 sudo tar -xzf grafana-backup.tar.gz -C /var/lib/grafana
 ```
 
+## Grafana Role Documentation
+
+The `grafana` role installs Grafana using native packages with comprehensive permission checks and security hardening.
+
+### Role Features
+
+- **Native package installation** via official Grafana APT repository
+- **Custom grafana.ini template** for configuration management
+- **Comprehensive permission checks** before and after deployment
+- **SELinux context management** (when enabled)
+- **Automatic SSL certificates** via Let's Encrypt
+- **Nginx reverse proxy** with WebSocket support for Grafana Live
+- **Health monitoring** and permission error detection
+- **Security headers** and hardening
+
+### Role Variables
+
+#### Required Variables
+
+```yaml
+# Domains for Grafana access
+grafana_domains:
+  - "dashboard.example.com"
+  - "www.dashboard.example.com"
+
+# Grafana admin credentials (override in host_vars with KeePass)
+grafana_admin_user: "admin"
+grafana_admin_password: "changeme"
+
+# User email for SSL certificates
+user:
+  email: "admin@example.com"
+```
+
+#### Optional Variables
+
+```yaml
+# Grafana configuration (grafana.ini format)
+grafana_ini_config:
+  server:
+    http_port: 3000
+    root_url: "%(protocol)s://%(domain)s/"
+  security:
+    admin_user: "{{ grafana_admin_user }}"
+    admin_password: "{{ grafana_admin_password }}"
+    cookie_secure: true
+    cookie_samesite: "lax"
+    disable_gravatar: true
+  database:
+    type: "sqlite3"
+    path: "/var/lib/grafana/grafana.db"
+
+# Service management
+grafana_service_name: "grafana-server"
+grafana_service_state: "started"
+grafana_service_enabled: true
+
+# Permission and security
+grafana_permission_checks_enabled: true
+grafana_auto_fix_permissions: true
+grafana_manage_selinux: true
+```
+
+### Directory Structure
+
+```
+roles/grafana/
+├── defaults/
+│   └── main.yml           # Configuration variables
+├── handlers/
+│   └── main.yml           # Service and permission handlers
+├── tasks/
+│   └── main.yml           # Installation and verification tasks
+├── templates/
+│   ├── grafana.ini.j2     # Grafana configuration template
+│   └── nginx.conf.j2      # Nginx reverse proxy configuration
+└── meta/
+    └── main.yml           # Role metadata
+```
+
+### Usage Example
+
+```yaml
+# In host_vars/your_host.yml
+grafana_domains:
+  - "dashboard.example.com"
+
+grafana_admin_user: "admin"
+grafana_admin_password: "{{ vault_grafana_password }}"
+
+user:
+  email: "admin@example.com"
+
+# In your playbook
+- name: Install Grafana
+  hosts: your_servers
+  roles:
+    - role: grafana
+```
+
+### Permission Checks
+
+The role performs comprehensive permission verification:
+
+**Pre-deployment:**
+- ✅ Directory ownership verification (grafana:grafana)
+- ✅ Permission mode validation (0750)
+- ✅ SELinux context configuration (when enabled)
+- ✅ Subdirectory creation with proper permissions
+- ✅ Systemd service file validation
+
+**Runtime:**
+- ✅ Service start verification
+- ✅ Health endpoint monitoring
+- ✅ Log analysis for permission errors
+- ✅ Write access verification
+
+### Migration from grafana_container
+
+To migrate from the container-based installation to native:
+
+1. **Backup existing data** (if needed):
+```bash
+sudo tar -czf grafana-backup.tar.gz -C /var/lib/grafana .
+```
+
+2. **Remove container installation**:
+```bash
+sudo systemctl stop grafana
+sudo systemctl disable grafana
+sudo podman rm -f grafana
+sudo rm -f /etc/systemd/system/grafana.service
+```
+
+3. **Run the native Grafana role**:
+```bash
+ansible-playbook playbooks/your_playbook.yml -i hosts.yml
+```
+
+4. **Verify installation**:
+```bash
+sudo systemctl status grafana-server
+sudo journalctl -u grafana-server -f
+curl http://localhost:3000/api/health
+```
+
+### Service Management
+
+```bash
+# Check service status
+sudo systemctl status grafana-server
+
+# View logs
+sudo journalctl -u grafana-server -f
+
+# Restart service
+sudo systemctl restart grafana-server
+
+# Edit configuration
+sudo nano /etc/grafana/grafana.ini
+
+# View configuration
+sudo cat /etc/grafana/grafana.ini
+```
+
+### Troubleshooting
+
+**Permission issues:**
+```bash
+# Fix ownership and permissions
+sudo chown -R grafana:grafana /var/lib/grafana
+sudo chmod -R 0750 /var/lib/grafana
+
+# Fix SELinux context (if enabled)
+sudo restorecon -Rv /var/lib/grafana
+```
+
+**Service won't start:**
+```bash
+# Check logs for errors
+sudo journalctl -u grafana-server -n 50 --no-pager
+
+# Verify configuration
+sudo grafana-cli --config=/etc/grafana/grafana.ini admin reset-admin-password
+
+# Check port availability
+sudo ss -tlnp | grep 3000
+```
+
+**Health check failures:**
+```bash
+# Test health endpoint locally
+curl http://localhost:3000/api/health
+
+# Test via nginx proxy
+curl https://dashboard.example.com/api/health
+```
+
 ### Differences: Native vs Container Grafana
 
 | Feature | Native Installation | Container (Systemd Service) |
@@ -410,6 +622,308 @@ sudo tar -xzf grafana-backup.tar.gz -C /var/lib/grafana
 | **Isolation** | None | Container namespace |
 | **Resource Limits** | System-level | Per-container limits |
 | **Service File** | `/lib/systemd/system/grafana-server.service` | `/etc/systemd/system/grafana.service` |
+
+## Grafana Service Role Documentation
+
+The `grafana_service` role provides a self-contained Grafana installation using the official `grafana.grafana` Ansible collection. It follows the same pattern as `headscale_service`, creating a dedicated system user, installing Grafana, setting up SSL certificates, and configuring nginx as a reverse proxy.
+
+### Role Features
+
+- **Self-contained installation** - Creates dedicated `grafana` system user
+- **Uses grafana.grafana collection** - Leverages official community Ansible collection
+- **Custom grafana.ini template** - Template-based configuration management
+- **SSL certificates** - Automatic Let's Encrypt certificate generation via certbot role
+- **Nginx reverse proxy** - Secure HTTPS access with WebSocket support
+- **Systemd service** - Automatic service enablement and management
+- **Basic authentication** - Native Grafana authentication (admin credentials from KeePass)
+
+### Role Structure
+
+```
+roles/grafana_service/
+├── defaults/
+│   └── main.yml           # Role variables
+├── handlers/
+│   └── main.yml           # Service restart handlers
+├── tasks/
+│   ├── main.yml           # Orchestrator
+│   ├── install_grafana.yml # Install Grafana using collection
+│   └── configure_grafana.yml # Configure Grafana directories and config
+└── templates/
+    ├── grafana.ini.j2     # Grafana configuration template
+    └── nginx.conf.j2      # Nginx reverse proxy configuration
+```
+
+### Role Variables
+
+#### Required Variables
+
+```yaml
+# Domains for Grafana access
+grafana_domains:
+  - "dashboard.example.com"
+  - "www.dashboard.example.com"
+
+# Primary domain for SSL certificate
+grafana_primary_domain: "dashboard.example.com"
+
+# Grafana admin credentials (from KeePass in production)
+grafana_admin_user: "admin"
+grafana_admin_password: "changeme"
+
+# User email for Let's Encrypt
+user:
+  email: "admin@example.com"
+```
+
+#### Optional Variables
+
+```yaml
+# Grafana version (empty for latest)
+grafana_version: ""
+
+# Service configuration
+grafana_user: grafana
+grafana_group: grafana
+grafana_service_name: grafana-server
+grafana_port: 3000
+
+# Directories
+grafana_config_dir: /etc/grafana
+grafana_data_dir: /var/lib/grafana
+grafana_log_dir: /var/log/grafana
+grafana_plugins_dir: /var/lib/grafana/plugins
+grafana_provisioning_dir: /etc/grafana/provisioning
+
+# Server configuration (grafana.ini [server] section)
+grafana_server_section:
+  http_addr: "127.0.0.1"
+  http_port: 3000
+  domain: "dashboard.example.com"
+
+# Security configuration (grafana.ini [security] section)
+grafana_security_section:
+  admin_user: "admin"
+  admin_password: "changeme"
+```
+
+### Usage Example
+
+In `host_vars/homester.yaml`:
+
+```yaml
+# From KeePass
+grafana_admin_user: "{{ lookup('keepass', 'homester/user', 'username') }}"
+grafana_admin_password: "{{ lookup('keepass', 'homester/user', 'password') }}"
+
+# Domains
+grafana_domains:
+  - "dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
+  - "www.dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
+grafana_primary_domain: "dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
+
+# User email
+user:
+  email: "{{ lookup('keepass', 'homester/email', 'username') }}"
+```
+
+In your playbook (e.g., `playbooks/homester.yml`):
+
+```yaml
+- name: 'Install Grafana'
+  hosts: vpn
+  become: true
+  remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
+  tasks:
+    - name: 'Import grafana service role'
+      ansible.builtin.import_role:
+        name: grafana_service
+```
+
+### Testing the grafana_service Role
+
+The `homester.yml` playbook uses the `grafana_service` role for complete Grafana setup.
+
+1. **Prerequisites**:
+   - Ensure KeePass database has entries for `homester/user` and `homester/domain_name`
+   - Verify DNS A record points to homester server IP for `dashboard.<domain>`
+   - Activate ansible environment: `pyenv shell ansible`
+
+2. **Run the homester playbook**:
+```bash
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+env no_proxy='*' ansible-playbook playbooks/homester.yml -i hosts.yml --ask-vault-password
+```
+
+3. **Verify deployment**:
+```bash
+# SSH to homester server
+ssh homester
+
+# Check Grafana service status
+sudo systemctl status grafana-server
+
+# Check Grafana is listening
+sudo ss -tlnp | grep 3000
+
+# Check NGINX configuration
+sudo nginx -t
+
+# Check SSL certificate
+sudo certbot certificates
+
+# View Grafana logs
+sudo journalctl -u grafana-server -n 50 --no-pager
+```
+
+4. **Access Grafana**:
+   - URL: `https://dashboard.<your-domain>`
+   - Credentials: Use KeePass `homester/user` credentials
+   - First login: You'll be prompted to change the password
+
+### Installation Steps
+
+The `grafana_service` role performs these steps in order:
+
+1. **Create system user** - Creates `grafana` system user with no login shell
+2. **Install Grafana** - Uses `grafana.grafana.grafana` collection to:
+   - Add official Grafana APT repository
+   - Import GPG key
+   - Install Grafana package
+   - Create and enable systemd service (package default)
+   - Start the service
+3. **Configure directories** - Ensures all directories exist with proper permissions (grafana:grafana)
+4. **Deploy configuration** - Installs custom `grafana.ini` from template with admin credentials (triggers service restart)
+5. **Setup SSL** - Uses `certbot` role to obtain Let's Encrypt certificate
+6. **Configure nginx** - Uses `nginx_config` role to deploy reverse proxy configuration
+
+### Service Management
+
+```bash
+# Check service status
+sudo systemctl status grafana-server
+
+# View logs
+sudo journalctl -u grafana-server -f
+
+# Restart service
+sudo systemctl restart grafana-server
+
+# Edit configuration
+sudo nano /etc/grafana/grafana.ini
+
+# View configuration
+sudo cat /etc/grafana/grafana.ini
+
+# Check Grafana version
+grafana-server -v
+```
+
+### Troubleshooting
+
+**Service won't start:**
+```bash
+# Check service status and logs
+sudo systemctl status grafana-server
+sudo journalctl -u grafana-server -n 50 --no-pager
+
+# Verify configuration
+sudo grafana-server --config=/etc/grafana/grafana.ini --homepath=/usr/share/grafana
+
+# Check port availability
+sudo ss -tlnp | grep 3000
+```
+
+**Permission issues:**
+```bash
+# Fix ownership and permissions
+sudo chown -R grafana:grafana /var/lib/grafana
+sudo chown -R grafana:grafana /var/log/grafana
+sudo chown -R grafana:grafana /etc/grafana
+sudo chmod 0640 /etc/grafana/grafana.ini
+```
+
+**SSL certificate issues:**
+```bash
+# Check certificate status
+sudo certbot certificates
+
+# Renew certificate manually
+sudo certbot renew
+
+# Check nginx configuration
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+**Health check:**
+```bash
+# Test health endpoint locally
+curl http://localhost:3000/api/health
+
+# Test via nginx proxy
+curl https://dashboard.example.com/api/health
+```
+
+### Migration from grafana or grafana_container
+
+To migrate from the previous `grafana` or `grafana_container` roles to `grafana_service`:
+
+1. **Backup existing data** (if needed):
+```bash
+# For container installation
+sudo podman exec grafana grafana-cli admin reset-admin-password newpass
+sudo tar -czf grafana-backup.tar.gz -C /var/lib/grafana .
+
+# For native installation
+sudo tar -czf grafana-backup.tar.gz -C /var/lib/grafana .
+```
+
+2. **Stop and remove old installation**:
+```bash
+# Stop old service
+sudo systemctl stop grafana  # or grafana-server
+sudo systemctl disable grafana
+
+# For container installation
+sudo podman rm -f grafana
+sudo rm -f /etc/systemd/system/grafana.service
+
+# For native installation
+sudo apt remove grafana
+```
+
+3. **Run the new grafana_service role**:
+```bash
+ansible-playbook playbooks/homester.yml -i hosts.yml
+```
+
+4. **Verify installation**:
+```bash
+sudo systemctl status grafana-server
+sudo journalctl -u grafana-server -f
+curl https://dashboard.example.com
+```
+
+### Key Differences from Other Roles
+
+| Feature | grafana_service | grafana (old) | grafana_container | headscale_service |
+|---------|----------------|---------------|-------------------|-------------------|
+| **Installation Method** | grafana.grafana collection | Manual APT setup | Podman container | Binary download |
+| **System User** | Creates grafana user + package user | Uses package user | Creates grafana user | Creates headscale user |
+| **Configuration** | Template-based | Template-based | Environment variables | Template-based |
+| **SSL/NGINX** | certbot + nginx_config roles | Inline in role | Inline in role | certbot + nginx_config roles |
+| **Service Type** | System systemd (package) | System systemd | System systemd (container) | Custom systemd service |
+| **Service File** | Package default | Package default | Custom template | Custom template |
+| **Pattern** | Uses official collection | Custom | Custom | Custom binary install |
+
+The `grafana_service` role is the recommended approach for Grafana installation because it:
+- Leverages the official `grafana.grafana` Ansible collection
+- Uses the package's systemd service file (follows official docs)
+- Integrates with certbot and nginx_config helper roles
+- Requires minimal custom configuration (only grafana.ini)
 ## Misc tips
 
 ### Enable tailscale custom coordinator on GliNet router

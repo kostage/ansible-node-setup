@@ -1,0 +1,8 @@
+---
+# Handlers for Grafana service
+
+- name: 'Restart Grafana service'
+  become: true
+  ansible.builtin.systemd:
+    name: '{{ grafana_service_name }}'
+    state: restarted

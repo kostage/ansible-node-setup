@@ -10,7 +10,7 @@ user:
   name: "{{ lookup('keepass', 'homester/user', 'username') }}"
   password: "{{ lookup('keepass', 'homester/user', 'password') }}"
   email: "{{ lookup('keepass', 'homester/email', 'password') }}"
-  ssh_key_path: "/Users/kostage/Doroshenko/nodes/{{ lookup('keepass', 'homester/user', 'username') }}/ssh/"
+  ssh_key_path: "/Users/kostage/Doroshenko/nodes/homester/ssh"
   ssh_key_file: "{{ lookup('keepass', 'homester/user', 'username') }}_id_rsa" # & .pub 
 
 tlsgen_common_name: "{{ lookup('keepass', 'homester/ip', 'password') }}"
@@ -49,11 +49,18 @@ apt_packages:
   - software-properties-common
   - build-essential
 
-# Grafana Container configuration
-# Host-specific variables that vary per host
 grafana_admin_user: "{{ lookup('keepass', 'homester/user', 'username') }}"
 grafana_admin_password: "{{ lookup('keepass', 'homester/user', 'password') }}"
 grafana_domains:
   - "dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
   - "www.dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
 grafana_primary_domain: "dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
+
+# Grafana configuration (required by grafana.grafana collection)
+grafana_ini:
+  server:
+    http_port: 3000
+  security:
+    admin_user: "{{ lookup('keepass', 'homester/user', 'username') }}"
+    admin_password: "{{ lookup('keepass', 'homester/user', 'password') }}"
+
