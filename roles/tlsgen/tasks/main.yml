@@ -1,8 +1,11 @@
+# Certificate generation (runs on localhost)
 - name: Create private key with password protection
   community.crypto.openssl_privatekey:
     path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
     passphrase: "{{ tlsgen_ca_secret_passphrase }}"
     cipher: auto
+  delegate_to: localhost
+  become: false
   when: tlsgen_ca_create
 
 - name: Create certificate signing request (CSR) for CA certificate
@@ -18,6 +21,8 @@
       - keyCertSign
     key_usage_critical: true
   register: tlsgen_ca_csr
+  delegate_to: localhost
+  become: false
   when: tlsgen_ca_create
 
 - name: Create self-signed CA certificate from CSR
@@ -27,6 +32,8 @@
     privatekey_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
     privatekey_passphrase: "{{ tlsgen_ca_secret_passphrase }}"
     provider: selfsigned
+  delegate_to: localhost
+  become: false
   when: tlsgen_ca_create
 
 - name: Clean tls files directory
@@ -34,6 +41,8 @@
     path: "{{ tlsgen_path }}"
     state: absent
     mode: 0o700
+  delegate_to: localhost
+  become: false
 
 - name: Create tls files directory
   ansible.builtin.file:
@@ -41,10 +50,14 @@
     state: directory
     mode: 0o700
     recurse: true
+  delegate_to: localhost
+  become: false
 
 - name: Create private key for new certificate for server
   community.crypto.openssl_privatekey:
     path: "{{ tlsgen_path }}/{{ tlsgen_key_name }}"
+  delegate_to: localhost
+  become: false
 
 - name: Create certificate signing request (CSR) for new certificate
   community.crypto.openssl_csr_pipe:
@@ -52,6 +65,8 @@
     common_name: "{{ tlsgen_common_name }}"
     subject_alt_name: "{{ tlsgen_sans }}"
   register: tlsgen_csr
+  delegate_to: localhost
+  become: false
 
 - name: Sign certificate with our CA
   community.crypto.x509_certificate:
@@ -63,3 +78,35 @@
     ownca_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_cert_name }}"
     ownca_privatekey_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
     ownca_privatekey_passphrase: "{{ tlsgen_ca_secret_passphrase }}"
+  delegate_to: localhost
+  become: false
+
+# Remote certificate deployment (runs on target host)
+- name: Create node TLS directory on remote
+  ansible.builtin.file:
+    path: '{{ tlsgen_remote_path }}'
+    state: directory
+    owner: root
+    group: root
+    mode: 'u=rwx,g=rwx,o=rx'
+  become: true
+
+- name: Transfer TLS certificate to remote
+  ansible.builtin.copy:
+    src: '{{ tlsgen_path }}/{{ tlsgen_cert_name }}'
+    dest: '{{ tlsgen_remote_path }}/{{ tlsgen_cert_name }}'
+    owner: root
+    group: root
+    mode: 'u=rw,g=rw,o=r'
+    force: true
+  become: true
+
+- name: Transfer TLS private key to remote
+  ansible.builtin.copy:
+    src: '{{ tlsgen_path }}/{{ tlsgen_key_name }}'
+    dest: '{{ tlsgen_remote_path }}/{{ tlsgen_key_name }}'
+    owner: root
+    group: root
+    mode: 'u=rw,g=rw,o=r'
+    force: true
+  become: true

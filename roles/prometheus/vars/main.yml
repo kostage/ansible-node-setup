@@ -4,7 +4,8 @@ prometheus_inodes_avail_alert_percent: 5
 prometheus_service_alert: "node_exporter.service"
 prometheus_mem_avail_alert_percent: 5
 
-prometheus_scrape_configs: "{{ lookup('ansible.builtin.template', 'scrape_configs.j2') | from_yaml }}"
+# prometheus_scrape_configs is set dynamically in tasks/main.yml from template
+
 prometheus_alertmanager_config:
   - scheme: http
     static_configs:

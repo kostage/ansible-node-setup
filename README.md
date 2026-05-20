@@ -196,11 +196,113 @@ ssl_email: "admin@example.com"
 - **Architecture**: Legacy (will be migrated to new service architecture)
 
 ### headplane.yml
-- **Purpose**: Headscale + Grafana on single server
-- **Services**: Headscale, Grafana, Prometheus, Alertmanager, Node Exporter
+- **Purpose**: Headscale VPN coordination server with Node Exporter monitoring
+- **Services**: Headscale, Headplane, Node Exporter
 - **Architecture**: Completely flat structure with explicit steps
 - **Features**: Every setup step visible, no abstraction layers
-- **Authentication**: Grafana uses basic authentication (same password as non-root user)
+- **Monitoring**: Exports metrics via Node Exporter with HTTPS/TLS, scraped by remote Prometheus server
+- **Certificate**: Self-signed leaf certificate for Node Exporter HTTPS
+- **Firewall Ports**: 80 (HTTP), 443 (HTTPS), 9100 (Node Exporter for scraping)
+
+### homester.yml
+- **Purpose**: Complete monitoring dashboard and alerting server
+- **Services**: Grafana, Prometheus, Alertmanager, Node Exporter
+- **Architecture**: Completely flat structure with explicit steps
+- **Features**: Every setup step visible, no abstraction layers
+- **Monitoring Stack**:
+  - **Prometheus**: Scrapes metrics from all nodes including itself (localhost) and remote nodes via HTTPS
+  - **Alertmanager**: Sends alerts to Telegram with configurable routes and receivers
+  - **Node Exporter**: Exports local system metrics via HTTPS with self-signed certificate
+  - **Grafana**: Visualizes metrics with dashboards (native installation)
+- **Certificates**:
+  - Root CA certificate installed to trust self-signed certificates from monitored nodes
+  - Self-signed leaf certificate for local Node Exporter HTTPS
+- **Firewall Ports**: 80 (HTTP), 443 (HTTPS) - monitoring ports (9100, 9090, 9093) are internal only
+
+### Testing the Monitoring Setup
+
+The `homester.yml` playbook sets up a complete monitoring stack with Prometheus, Alertmanager, and Grafana.
+
+1. **Prerequisites**:
+   - Ensure KeePass database has entries for:
+     - `homester/user` (username, password)
+     - `homester/domain_name`
+     - `headplane/ip` and `headplane/user/password` (for remote node monitoring)
+     - `telegram_bot/token` (for Alertmanager notifications)
+   - Activate ansible environment: `pyenv shell ansible`
+
+2. **Run the homester playbook**:
+```bash
+export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+env no_proxy='*' ansible-playbook playbooks/homester.yml -i hosts.yml --ask-vault-password
+```
+
+3. **Verify monitoring stack**:
+```bash
+# SSH to homester server
+ssh homester
+
+# Check Prometheus service
+sudo systemctl status prometheus
+
+# Check Alertmanager service
+sudo systemctl status alertmanager
+
+# Check Node Exporter service
+sudo systemctl status node_exporter
+
+# Check Grafana service
+sudo systemctl status grafana-server
+
+# Verify services are listening (all internal except grafana)
+sudo ss -tlnp | grep -E "(9100|9090|9093|3000)"
+# Note: Only ports 80/443 exposed externally, monitoring ports are internal
+
+# Check Prometheus targets
+curl http://localhost:9090/api/v1/targets
+
+# Check Prometheus metrics
+curl http://localhost:9090/api/v1/label/__name__/values
+
+# View Prometheus configuration
+sudo cat /etc/prometheus/prometheus.yml
+
+# View Alertmanager configuration
+sudo cat /etc/alertmanager/alertmanager.yml
+```
+
+4. **Test alerting**:
+```bash
+# Check Alertmanager is operational
+curl http://localhost:9093/api/v2/status
+
+# Test Telegram integration (check Alertmanager logs)
+sudo journalctl -u alertmanager -f
+
+# Trigger a test alert (stop node_exporter temporarily)
+sudo systemctl stop node_exporter
+# Wait 5 minutes for the InstanceDown alert
+sudo systemctl start node_exporter
+```
+
+5. **Access dashboards**:
+   - **Grafana**: `https://dashboard.<your-domain>`
+     - Credentials: Use KeePass `homester/user` credentials
+     - Add Prometheus datasource: `http://localhost:9090`
+   - **Prometheus**: `http://homester:9090` (if firewall allows)
+   - **Alertmanager**: `http://homester:9093` (if firewall allows)
+
+6. **Verify node monitoring**:
+```bash
+# Check Prometheus is scraping remote nodes
+curl -s http://localhost:9090/api/v1/targets | jq '.data.activeTargets[] | {job: .labels.job, health: .health}'
+
+# View scrape configs
+sudo cat /etc/prometheus/prometheus.yml | grep -A 10 "scrape_configs"
+
+# Test connectivity to remote node exporter
+curl -u prometheus:<password> https://<headplane-ip>:9100/metrics
+```
 
 ### test_grafana.yml
 - **Purpose**: Test Grafana deployment on homester server

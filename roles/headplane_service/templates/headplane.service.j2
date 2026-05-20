@@ -6,12 +6,12 @@ StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-User=headplane
-Group=headplane
+User={{  headplane_user }}
+Group={{  headplane_user }}
 WorkingDirectory={{ headplane_install_dir }}
 Environment="PATH={{ headplane_node_path | dirname }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-Environment="NVM_DIR=/home/headplane/.nvm"
-Environment="HOME=/home/headplane"
+Environment="NVM_DIR=/home/{{  headplane_user }}/.nvm"
+Environment="HOME=/home/{{  headplane_user }}"
 ExecStart={{ headplane_node_path }} {{ headplane_install_dir }}/build/server/index.js
 Restart=on-failure
 RestartSec=5s

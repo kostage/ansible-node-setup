@@ -6,8 +6,8 @@ X-Restart-Triggers={{ headscale_config_dir }}/config.yaml
 
 [Service]
 Type=simple
-User=headscale
-Group=headscale
+User={{ headscale_user }}
+Group={{ headscale_user }}
 ExecStart={{ headscale_binary_path }} serve
 ExecReload=/usr/bin/kill -HUP $MAINPID
 Restart=always

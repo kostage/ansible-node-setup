@@ -1,4 +1,15 @@
 ---
+- name: 'Create headscale system user'
+  ansible.builtin.user:
+    name: "{{ headscale_user }}"
+    system: true
+    shell: /bin/bash  # Changed from nologin to allow running headscale CLI
+    home: /var/lib/headscale
+    create_home: false
+    groups: []
+  become: true
+  become_user: root
+
 - name: 'Install Headscale binary'
   include_tasks: install_headscale.yml
 
@@ -9,15 +20,16 @@
   include_tasks: create_service.yml
 
 - name: 'Start and enable Headscale service'
-  become: true
   ansible.builtin.systemd:
     name: headscale
     enabled: true
     state: restarted
+  become: true
+  become_user: root
 
 - name: 'Create SSL certificate for Headscale'
   ansible.builtin.import_role:
-    name: certbot
+    name: certbot_nginx
   vars:
     certbot_name: headscale
     certbot_domains: "{{ headscale_domains }}"

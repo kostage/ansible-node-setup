@@ -11,22 +11,25 @@
 
 - name: 'Create Headscale user for Headplane'
   become: true
+  become_user: headscale
   ansible.builtin.shell:
     cmd: |
-      headscale users create headplane
+      headscale users create "{{ headplane_user }}"
   register: headscale_user_create_result
   failed_when: false
   changed_when: headscale_user_create_result.rc != 1 or 'already exists' not in headscale_user_create_result.stderr
 
 - name: 'Get Headscale user ID'
   become: true
+  become_user: headscale
   ansible.builtin.shell:
     cmd: |
-      headscale users list -o json | jq -r '.[] | select(.name=="headplane") | .id'
+      headscale users list -o json | jq -r '.[] | select(.name=="{{ headplane_user }}") | .id'
   register: headscale_user_id_result
 
 - name: 'Create Headscale API key for Headplane'
   become: true
+  become_user: headscale
   ansible.builtin.shell:
     cmd: |
       headscale apikeys create --expiration 360d
@@ -38,10 +41,11 @@
 
 - name: 'Create Headplane configuration file'
   become: true
+  become_user: root
   ansible.builtin.template:
     src: headplane_config.yaml.j2
     dest: '{{ headplane_config_dir }}/config.yaml'
-    owner: headplane
-    group: headplane
+    owner: "{{ headplane_user }}"
+    group: "{{ headplane_user }}"
     mode: '0644'
-  notify: restart headplane
+  notify: restart headplane 

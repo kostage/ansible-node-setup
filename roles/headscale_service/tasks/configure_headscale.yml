@@ -1,19 +1,21 @@
 ---
 - name: 'Create Headscale socket directory'
-  become: true
   ansible.builtin.file:
     path: '{{ headscale_socket_dir }}'
     state: directory
-    owner: headscale
-    group: headscale
+    owner: "{{ headscale_user }}"
+    group: "{{ headscale_user }}"
     mode: '0755'
+  become: true
+  become_user: root
 
 - name: 'Create Headscale configuration file'
-  become: true
   ansible.builtin.template:
     src: headscale_config.yaml.j2
     dest: '{{ headscale_config_dir }}/config.yaml'
-    owner: headscale
-    group: headscale
+    owner: "{{ headscale_user }}"
+    group: "{{ headscale_user }}"
     mode: '0644'
   notify: restart headscale
+  become: true
+  become_user: root

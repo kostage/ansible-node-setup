@@ -1,0 +1,13 @@
+- name: 'Create alertmanager system user'
+  ansible.builtin.user:
+    name: "{{ alertmanager_system_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: /var/lib/alertmanager
+    create_home: false
+    groups: []
+  become: true
+
+- name: 'Import prometheus.prometheus.alertmanager'
+  ansible.builtin.import_role:
+    name: prometheus.prometheus.alertmanager

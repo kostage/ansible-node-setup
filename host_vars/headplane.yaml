@@ -2,50 +2,15 @@
 ssh_port: 22
 ansible_become_password: "{{ lookup('keepass', 'headplane/root', 'password') }}"
 
+# SSH key paths for different connection stages
+ssh_root_key_path: '/Users/kostage/Doroshenko/nodes/vultrssh'
+
 user:
   name: "{{ lookup('keepass', 'headplane/user', 'username') }}"
   password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
-  sshkey_save_path: '/Users/kostage/Doroshenko/nodes/headplane/ssh'
   email: "{{ lookup('keepass', 'headplane/email', 'password') }}"
-
-headscale_domains:
-  - "headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
-  - "www.headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
-
-headplane_domains:
-  - "headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
-  - "www.headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
-
-# Internal service ports
-headscale_service_port: 4444
-headplane_service_port: 7777
-http_port: 80
-
-# Prometheus configuration
-prometheus:
-  nodes: []
-
-# Alertmanager configuration
-alertmanager_version: latest
-alertmanager_system_user: alertmanager
-alertmanager_receivers:
-  - name: 'telegram'
-    telegram_configs:
-      - api_url: 'https://api.telegram.org'
-        bot_token: "{{ lookup('keepass', 'telegram_bot/token', 'password') }}"
-        chat_id: "{{ telegram_chat_id }}" # take from inventory due to weird integer var behavior
-        disable_notifications: false
-        http_config:
-          follow_redirects: true
-        send_resolved: true
-        parse_mode: HTML
-
-alertmanager_route:
-  group_by: ['alertname', 'cluster', 'service']
-  group_wait: 30s
-  group_interval: 5m
-  repeat_interval: 3h
-  receiver: 'telegram'
+  ssh_key_path: "/Users/kostage/Doroshenko/nodes/headplane/ssh"
+  ssh_key_file: "{{ lookup('keepass', 'headplane/user', 'username') }}_id_rsa" # & .pub
 
 # Firewall configuration
 firewall_rules:
@@ -68,45 +33,45 @@ apt_packages:
   - software-properties-common
   - build-essential
 
+headscale_user: headscale
 headscale_dns_domain: "{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
 headscale_server_url: "https://headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}:443"
+headscale_domains:
+  - "headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+  - "www.headscale.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+headscale_service_port: 4444
 
-headplane_basic_auth_user: "{{ user.name }}"
-headplane_basic_auth_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
+headplane_user: headplane
+headplane_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
 headplane_domain: "headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+headplane_domains:
+  - "headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+  - "www.headplane.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+headplane_service_port: 7777
 
-# Grafana Container configuration
-grafana_admin_user: "{{ lookup('keepass', 'headplane/user', 'username') }}"
-grafana_admin_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
-grafana_container_user: "grafana"
-grafana_container_uid: 472
-grafana_container_gid: 472
-grafana_domains:
-  - "dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
-  - "www.dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
-grafana_primary_domain: "dashboard.{{ lookup('keepass', 'headplane/domain_name', 'username') }}"
+# Prometheus configuration
+prometheus_username: 'prometheus'
+prometheus:
+  nodes: []
 
-# Grafana configuration for container deployment
-grafana_ini_config:
-  server:
-    http_port: 3000
-    root_url: "%(protocol)s://%(domain)s/"
-  security:
-    admin_user: "{{ lookup('keepass', 'headplane/user', 'username') }}"
-    admin_password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
-    cookie_secure: true
-    cookie_samesite: "lax"
-    disable_gravatar: true
-    content_security_policy: true
-    x_content_type_options: true
-    x_xss_protection: true
-    strict_transport_security: true
-    strict_transport_security_max_age: "86400"
-  users:
-    viewers_can_edit: false
-  auth:
-    disable_login_form: false
-  database:
-    type: "sqlite3"
-    path: "var/lib/grafana/grafana.db"
+# Alertmanager configuration
+alertmanager_version: latest
+alertmanager_system_user: alertmanager
+alertmanager_receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - api_url: 'https://api.telegram.org'
+        bot_token: "{{ lookup('keepass', 'telegram_bot/token', 'password') }}"
+        chat_id: "{{ telegram_chat_id }}"
+        disable_notifications: false
+        http_config:
+          follow_redirects: true
+        send_resolved: true
+        parse_mode: HTML
 
+alertmanager_route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+  receiver: 'telegram'

@@ -43,25 +43,57 @@
           - rule: allow
             port: "{{ http_port }}"
 
-- name: 'Install NGINX'
+- name: 'Generate and install TLS certificate'
   hosts: vpn
-  become: true
   remote_user: "{{ user.name }}"
   vars:
     ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
   tasks:
-    - name: 'Install gnupg for apt-key support'
-      ansible.builtin.apt:
-        name:
-          - gnupg
-          - curl
-        state: present
-
-    - name: 'Import role'
+    - name: 'Import tlsgen role'
       ansible.builtin.import_role:
-        name: nginxinc.nginx
+        name: tlsgen
 
-- name: 'Install Grafana (Native Installation)'
+- name: 'Install Node Exporter'
+  hosts: vpn
+  remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
+  tasks:
+    - name: 'Import node_exporter role'
+      ansible.builtin.import_role:
+        name: prometheus.prometheus.node_exporter
+
+- name: 'Install root cert to allow prometheus scrape nodes'
+  hosts: vpn
+  remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
+  tasks:
+    - name: 'Import selfcert role'
+      ansible.builtin.import_role:
+        name: selfcert
+
+- name: 'Install prometheus'
+  hosts: vpn
+  remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
+  tasks:
+    - name: 'Import prometheus role'
+      ansible.builtin.import_role:
+        name: prometheus
+
+- name: 'Install alertmanager'
+  hosts: vpn
+  remote_user: "{{ user.name }}"
+  vars:
+    ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
+  tasks:
+    - name: 'Import alertmanager role'
+      ansible.builtin.import_role:
+        name: alertmanager
+
+- name: 'Install Grafana Service'
   hosts: vpn
   become: true
   remote_user: "{{ user.name }}"

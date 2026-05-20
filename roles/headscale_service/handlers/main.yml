@@ -1,6 +1,7 @@
 ---
 - name: restart headscale
   become: true
+  become_user: root
   ansible.builtin.service:
     name: headscale
     state: restarted

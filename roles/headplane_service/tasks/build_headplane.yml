@@ -1,55 +1,57 @@
 ---
 - name: 'Check if Headplane is already built'
-  become: true
   ansible.builtin.stat:
     path: '{{ headplane_install_dir }}/build/server/index.js'
   register: headplane_built
+  become: true
+  become_user: root
 
 - name: 'Display Headplane build status'
   ansible.builtin.debug:
     msg: "Headplane already built: {{ headplane_built.stat.exists }}, force_reinstall: {{ force_reinstall }}"
 
 - name: 'Remove existing Headplane build directory if force_reinstall is true'
-  become: true
   ansible.builtin.file:
     path: '{{ headplane_install_dir }}'
     state: absent
   when: force_reinstall | bool
+  become: true
+  become_user: root
 
 - name: 'Clone Headplane repository'
-  become: true
-  become_user: headplane
   ansible.builtin.git:
     repo: '{{ headplane_git_url }}'
     dest: '{{ headplane_install_dir }}'
     version: '{{ headplane_version }}'
     force: true
   when: not headplane_built.stat.exists or force_reinstall | bool
+  become: true
+  become_user: "{{ headplane_user }}"
 
 - name: 'Install dependencies and build Headplane'
-  become: true
-  become_user: headplane
   ansible.builtin.shell:
     cmd: |
-      export NVM_DIR="/home/headplane/.nvm"
-      export PATH="/home/headplane/.local/share/pnpm:$PATH"
+      export NVM_DIR="$HOME/.nvm"
+      export PATH="$HOME/.local/share/pnpm:$PATH"
       [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
       cd {{ headplane_install_dir }}
       pnpm install
       pnpm build
-  args:
     executable: /bin/bash
   environment:
-    PATH: "/home/headplane/.local/share/pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-    NVM_DIR: "/home/headplane/.nvm"
-    HOME: "/home/headplane"
+    PATH: "$HOME/.local/share/pnpm:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    NVM_DIR: "$HOME/.nvm"
+    HOME: "/home/{{ headplane_user }}"
   when: not headplane_built.stat.exists or force_reinstall | bool
+  become: true
+  become_user: "{{ headplane_user }}"
 
 - name: 'Ensure main server file is executable'
-  become: true
   ansible.builtin.file:
     path: '{{ headplane_install_dir }}/build/server/index.js'
     mode: '0755'
-    owner: headplane
-    group: headplane
+    owner: "{{ headplane_user }}"
+    group: "{{ headplane_user }}"
   when: headplane_built.stat.exists or force_reinstall | bool
+  become: true
+  become_user: root

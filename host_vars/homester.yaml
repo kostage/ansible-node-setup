@@ -29,13 +29,13 @@ http_port: 80
 # Firewall configuration
 firewall_rules:
   - rule: allow
-    port: 9100 # nodexp
-  - rule: allow
     port: 22
   - rule: allow
     port: 443
   - rule: allow
     port: 80
+  - rule: allow
+    port: 3000
 
 # Package configuration
 apt_packages:
@@ -49,18 +49,39 @@ apt_packages:
   - software-properties-common
   - build-essential
 
-grafana_admin_user: "{{ lookup('keepass', 'homester/user', 'username') }}"
-grafana_admin_password: "{{ lookup('keepass', 'homester/user', 'password') }}"
-grafana_domains:
+grafana_service_admin_user: "{{ lookup('keepass', 'homester/user', 'username') }}"
+grafana_service_admin_password: "{{ lookup('keepass', 'homester/user', 'password') }}"
+grafana_service_domains:
   - "dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
   - "www.dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
-grafana_primary_domain: "dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
+grafana_service_primary_domain: "dashboard.{{ lookup('keepass', 'homester/domain_name', 'username') }}"
 
-# Grafana configuration (required by grafana.grafana collection)
-grafana_ini:
-  server:
-    http_port: 3000
-  security:
-    admin_user: "{{ lookup('keepass', 'homester/user', 'username') }}"
-    admin_password: "{{ lookup('keepass', 'homester/user', 'password') }}"
+# Prometheus configuration
+prometheus_username: 'prometheus'
+prometheus:
+  nodes:
+    - name: 'headplane'
+      ip: "{{ lookup('keepass', 'headplane/ip', 'password') }}"
+      password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
 
+# Alertmanager configuration
+alertmanager_version: latest
+alertmanager_system_user: alertmanager
+alertmanager_receivers:
+  - name: 'telegram'
+    telegram_configs:
+      - api_url: 'https://api.telegram.org'
+        bot_token: "{{ lookup('keepass', 'telegram_bot/token', 'password') }}"
+        chat_id: "{{ telegram_chat_id }}"
+        disable_notifications: false
+        http_config:
+          follow_redirects: true
+        send_resolved: true
+        parse_mode: HTML
+
+alertmanager_route:
+  group_by: ['alertname', 'cluster', 'service']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+  receiver: 'telegram'

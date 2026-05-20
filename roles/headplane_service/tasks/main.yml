@@ -1,4 +1,23 @@
 ---
+- name: 'Create headplane system user'
+  ansible.builtin.user:
+    name: "{{ headplane_user }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "/home/{{ headplane_user }}"
+    create_home: false
+    groups: []
+  become: true
+  become_user: root
+
+- name: 'Add headplane user to headscale group'
+  ansible.builtin.user:
+    name: "{{ headplane_user }}"
+    groups: ["headscale"]
+    append: true
+  become: true
+  become_user: root
+
 - name: 'Install Headplane service dependencies'
   include_tasks: install_dependencies.yml
 
@@ -12,37 +31,41 @@
   include_tasks: create_service.yml
 
 - name: 'Start and enable Headplane service'
-  become: true
   ansible.builtin.systemd:
     name: headplane
     enabled: true
     state: restarted
+  become: true
+  become_user: root
 
 - name: 'Install apache2-utils for htpasswd'
-  become: true
   ansible.builtin.apt:
     name:
       - apache2-utils
     state: present
+  become: true
+  become_user: root
 
 - name: 'Create htpasswd file for nginx basic auth'
-  become: true
   ansible.builtin.shell:
     cmd: |
-      htpasswd -bc /etc/nginx/.htpasswd-headplane {{ headplane_basic_auth_user }} {{ headplane_basic_auth_password }}
+      htpasswd -bc /etc/nginx/.htpasswd-headplane "{{ headplane_user }}" "{{ headplane_password }}"
     creates: /etc/nginx/.htpasswd-headplane
+  become: true
+  become_user: root
 
 - name: 'Set htpasswd file permissions'
-  become: true
   ansible.builtin.file:
     path: /etc/nginx/.htpasswd-headplane
     owner: root
     group: www-data
     mode: '0644'
+  become: true
+  become_user: root
 
 - name: 'Create SSL certificate for Headplane'
   ansible.builtin.import_role:
-    name: certbot
+    name: certbot_nginx
   vars:
     certbot_name: headplane
     certbot_domains: "{{ headplane_domains }}"

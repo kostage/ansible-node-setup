@@ -1,6 +1,6 @@
 ---
-# Default Headscale service configuration
-# Note: headscale is always enabled in headplane setup
+# Headscale user
+headscale_user: headscale
 
 # Headscale installation
 headscale_binary_path: "/usr/local/bin/headscale"
