@@ -10,7 +10,6 @@
     headplane_cookie_secret: '{{ headplane_cookie_secret | default(headplane_cookie_secret_generated.stdout) }}'
 
 - name: 'Create Headscale user for Headplane'
-  become: true
   become_user: headscale
   ansible.builtin.shell:
     cmd: |
@@ -20,7 +19,6 @@
   changed_when: headscale_user_create_result.rc != 1 or 'already exists' not in headscale_user_create_result.stderr
 
 - name: 'Get Headscale user ID'
-  become: true
   become_user: headscale
   ansible.builtin.shell:
     cmd: |
@@ -28,7 +26,6 @@
   register: headscale_user_id_result
 
 - name: 'Create Headscale API key for Headplane'
-  become: true
   become_user: headscale
   ansible.builtin.shell:
     cmd: |
@@ -40,8 +37,6 @@
     headscale_api_key: '{{ headscale_api_key | default(headscale_api_key_result.stdout_lines[0]) }}'
 
 - name: 'Create Headplane configuration file'
-  become: true
-  become_user: root
   ansible.builtin.template:
     src: headplane_config.yaml.j2
     dest: '{{ headplane_config_dir }}/config.yaml'

@@ -6,8 +6,6 @@
     mode: '0755'
     owner: root
     group: root
-  become: true
-  become_user: root
 
 - name: 'Create Headscale directories'
   ansible.builtin.file:
@@ -21,5 +19,3 @@
     - '{{ headscale_data_dir }}'
     - '{{ headscale_log_dir }}'
     - '{{ headscale_socket_dir }}'
-  become: true
-  become_user: root

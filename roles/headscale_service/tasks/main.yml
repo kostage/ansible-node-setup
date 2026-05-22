@@ -7,8 +7,6 @@
     home: /var/lib/headscale
     create_home: false
     groups: []
-  become: true
-  become_user: root
 
 - name: 'Install Headscale binary'
   include_tasks: install_headscale.yml
@@ -24,8 +22,6 @@
     name: headscale
     enabled: true
     state: restarted
-  become: true
-  become_user: root
 
 - name: 'Create SSL certificate for Headscale'
   ansible.builtin.import_role:

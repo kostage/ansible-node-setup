@@ -6,8 +6,6 @@
     owner: "{{ headscale_user }}"
     group: "{{ headscale_user }}"
     mode: '0755'
-  become: true
-  become_user: root
 
 - name: 'Create Headscale configuration file'
   ansible.builtin.template:
@@ -17,5 +15,3 @@
     group: "{{ headscale_user }}"
     mode: '0644'
   notify: restart headscale
-  become: true
-  become_user: root

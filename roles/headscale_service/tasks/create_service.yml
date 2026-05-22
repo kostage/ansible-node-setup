@@ -6,11 +6,7 @@
     owner: root
     group: root
     mode: '0644'
-  become: true
-  become_user: root
 
 - name: 'Reload systemd daemon'
   ansible.builtin.systemd:
     daemon_reload: true
-  become: true
-  become_user: root
