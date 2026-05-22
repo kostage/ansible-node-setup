@@ -1,0 +1,43 @@
+---
+# Leaf Node Configuration Example
+# This file configures example as a leaf node with TLS-enabled Node Exporter
+
+ssh_port: 22
+ansible_become_password: "{{ lookup('keepass', 'example/root', 'password') }}"
+
+# SSH key paths for different connection stages
+ssh_root_key_path: '/Users/kostage/Doroshenko/nodes/hetzner'
+
+# User configuration
+user:
+  name: "{{ lookup('keepass', 'example/user', 'username') }}"
+  password: "{{ lookup('keepass', 'example/user', 'password') }}"
+  email: "{{ lookup('keepass', 'example/email', 'password') }}"
+  ssh_key_path: "/Users/kostage/Doroshenko/nodes/example/ssh"
+  ssh_key_file: "{{ lookup('keepass', 'example/user', 'username') }}_id_rsa"
+
+# TLS certificate configuration for Node Exporter
+# The certificate is signed by the headplane CA to allow secure scraping
+leaf_cert_common_name: "{{ lookup('keepass', 'example/ip', 'password') }}"
+leaf_cert_sans:
+  - "IP:{{ lookup('keepass', 'example/ip', 'password') }}"
+
+# Node Exporter TLS configuration
+node_exporter_tls_server_config:
+  cert_file: '{{ leaf_cert_remote_path }}/{{ leaf_cert_cert_name }}'
+  key_file: '{{ leaf_cert_remote_path }}/{{ leaf_cert_key_name }}'
+node_exporter_basic_auth_users:
+  prometheus: "{{ lookup('keepass', 'example/user', 'password') }}"
+node_exporter_tls_port: 9100
+
+# Basic packages for leaf node
+apt_packages:
+  - curl
+  - wget
+  - git
+  - unzip
+  - python3
+  - python3-pip
+  - python3-debian
+  - software-properties-common
+  - build-essential

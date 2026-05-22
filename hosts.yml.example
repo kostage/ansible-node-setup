@@ -1,0 +1,12 @@
+headplane_servers:
+  hosts:
+    headplane:
+      ansible_host: 1.2.3.4
+      ansible_port: 22
+      telegram_chat_id: 123456789
+
+node_exporters:
+  hosts:
+    example:
+      ansible_host: 3.4.5.6
+      ansible_port: 22

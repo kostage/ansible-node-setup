@@ -1,18 +1,20 @@
-# Certificate generation (runs on localhost)
+# Leaf Certificate Generation (runs on localhost)
+# This role generates leaf certificates signed by a root CA and deploys them to remote hosts
+
 - name: Create private key with password protection
   community.crypto.openssl_privatekey:
-    path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
-    passphrase: "{{ tlsgen_ca_secret_passphrase }}"
+    path: "{{ leaf_cert_ca_root_path }}/{{ leaf_cert_ca_root_key_name }}"
+    passphrase: "{{ leaf_cert_ca_secret_passphrase }}"
     cipher: auto
   delegate_to: localhost
   become: false
-  when: tlsgen_ca_create
+  when: leaf_cert_ca_create
 
 - name: Create certificate signing request (CSR) for CA certificate
   community.crypto.openssl_csr_pipe:
-    privatekey_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
-    privatekey_passphrase: "{{ tlsgen_ca_secret_passphrase }}"
-    common_name: "{{ tlsgen_ca_common_name }}"
+    privatekey_path: "{{ leaf_cert_ca_root_path }}/{{ leaf_cert_ca_root_key_name }}"
+    privatekey_passphrase: "{{ leaf_cert_ca_secret_passphrase }}"
+    common_name: "{{ leaf_cert_ca_common_name }}"
     use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
     basic_constraints:
       - 'CA:TRUE'
@@ -20,25 +22,25 @@
     key_usage:
       - keyCertSign
     key_usage_critical: true
-  register: tlsgen_ca_csr
+  register: leaf_cert_ca_csr
   delegate_to: localhost
   become: false
-  when: tlsgen_ca_create
+  when: leaf_cert_ca_create
 
 - name: Create self-signed CA certificate from CSR
   community.crypto.x509_certificate:
-    csr_content: "{{ tlsgen_ca_csr.csr }}"
-    path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_cert_name }}"
-    privatekey_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
-    privatekey_passphrase: "{{ tlsgen_ca_secret_passphrase }}"
+    csr_content: "{{ leaf_cert_ca_csr.csr }}"
+    path: "{{ leaf_cert_ca_root_path }}/{{ leaf_cert_ca_root_cert_name }}"
+    privatekey_path: "{{ leaf_cert_ca_root_path }}/{{ leaf_cert_ca_root_key_name }}"
+    privatekey_passphrase: "{{ leaf_cert_ca_secret_passphrase }}"
     provider: selfsigned
   delegate_to: localhost
   become: false
-  when: tlsgen_ca_create
+  when: leaf_cert_ca_create
 
 - name: Clean tls files directory
   ansible.builtin.file:
-    path: "{{ tlsgen_path }}"
+    path: "{{ leaf_cert_path }}"
     state: absent
     mode: 0o700
   delegate_to: localhost
@@ -46,7 +48,7 @@
 
 - name: Create tls files directory
   ansible.builtin.file:
-    path: "{{ tlsgen_path }}"
+    path: "{{ leaf_cert_path }}"
     state: directory
     mode: 0o700
     recurse: true
@@ -55,36 +57,36 @@
 
 - name: Create private key for new certificate for server
   community.crypto.openssl_privatekey:
-    path: "{{ tlsgen_path }}/{{ tlsgen_key_name }}"
+    path: "{{ leaf_cert_path }}/{{ leaf_cert_key_name }}"
   delegate_to: localhost
   become: false
 
 - name: Create certificate signing request (CSR) for new certificate
   community.crypto.openssl_csr_pipe:
-    privatekey_path: "{{ tlsgen_path }}/{{ tlsgen_key_name }}"
-    common_name: "{{ tlsgen_common_name }}"
-    subject_alt_name: "{{ tlsgen_sans }}"
-  register: tlsgen_csr
+    privatekey_path: "{{ leaf_cert_path }}/{{ leaf_cert_key_name }}"
+    common_name: "{{ leaf_cert_common_name }}"
+    subject_alt_name: "{{ leaf_cert_sans }}"
+  register: leaf_cert_csr
   delegate_to: localhost
   become: false
 
 - name: Sign certificate with our CA
   community.crypto.x509_certificate:
-    csr_content: "{{ tlsgen_csr.csr }}"
+    csr_content: "{{ leaf_cert_csr.csr }}"
     provider: ownca
-    path: "{{ tlsgen_path }}/{{ tlsgen_cert_name }}"
-    ownca_not_after: "{{ tlsgen_not_after }}"
-    ownca_not_before: "{{ tlsgen_not_before }}"
-    ownca_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_cert_name }}"
-    ownca_privatekey_path: "{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_key_name }}"
-    ownca_privatekey_passphrase: "{{ tlsgen_ca_secret_passphrase }}"
+    path: "{{ leaf_cert_path }}/{{ leaf_cert_cert_name }}"
+    ownca_not_after: "{{ leaf_cert_not_after }}"
+    ownca_not_before: "{{ leaf_cert_not_before }}"
+    ownca_path: "{{ leaf_cert_ca_root_path }}/{{ leaf_cert_ca_root_cert_name }}"
+    ownca_privatekey_path: "{{ leaf_cert_ca_root_path }}/{{ leaf_cert_ca_root_key_name }}"
+    ownca_privatekey_passphrase: "{{ leaf_cert_ca_secret_passphrase }}"
   delegate_to: localhost
   become: false
 
 # Remote certificate deployment (runs on target host)
 - name: Create node TLS directory on remote
   ansible.builtin.file:
-    path: '{{ tlsgen_remote_path }}'
+    path: '{{ leaf_cert_remote_path }}'
     state: directory
     owner: root
     group: root
@@ -93,8 +95,8 @@
 
 - name: Transfer TLS certificate to remote
   ansible.builtin.copy:
-    src: '{{ tlsgen_path }}/{{ tlsgen_cert_name }}'
-    dest: '{{ tlsgen_remote_path }}/{{ tlsgen_cert_name }}'
+    src: '{{ leaf_cert_path }}/{{ leaf_cert_cert_name }}'
+    dest: '{{ leaf_cert_remote_path }}/{{ leaf_cert_cert_name }}'
     owner: root
     group: root
     mode: 'u=rw,g=rw,o=r'
@@ -103,8 +105,8 @@
 
 - name: Transfer TLS private key to remote
   ansible.builtin.copy:
-    src: '{{ tlsgen_path }}/{{ tlsgen_key_name }}'
-    dest: '{{ tlsgen_remote_path }}/{{ tlsgen_key_name }}'
+    src: '{{ leaf_cert_path }}/{{ leaf_cert_key_name }}'
+    dest: '{{ leaf_cert_remote_path }}/{{ leaf_cert_key_name }}'
     owner: root
     group: root
     mode: 'u=rw,g=rw,o=r'

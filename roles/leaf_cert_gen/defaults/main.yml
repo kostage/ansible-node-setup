@@ -1,0 +1,9 @@
+# Leaf Certificate Generation Role Variables
+# This role generates and deploys leaf certificates signed by a root CA
+
+leaf_cert_ca_common_name: "Konstantin Doroshenko CA"
+leaf_cert_ca_root_cert_name: ca_root.crt
+leaf_cert_ca_root_key_name: ca_root.key
+leaf_cert_ca_create: no
+leaf_cert_not_after: +999d  # valid for ~3 years
+leaf_cert_not_before: "-1d"  # valid since yesterday

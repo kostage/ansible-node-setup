@@ -1,7 +1,11 @@
+# Root Certificate Installation Role
+# This role installs a root CA certificate into the system's trusted certificate store
+# This allows the system to verify certificates signed by this CA
+
 - name: Install self-signed root cert to enable https to self-signed nodes
   become: true
   ansible.builtin.copy:
-    src: '{{ tlsgen_ca_root_path }}/{{ tlsgen_ca_root_cert_name }}'
+    src: '{{ leaf_cert_ca_root_path }}/{{ leaf_cert_ca_root_cert_name }}'
     dest: '/usr/local/share/ca-certificates'
     owner: root
     group: root

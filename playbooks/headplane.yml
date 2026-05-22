@@ -16,8 +16,6 @@
     - name: 'Create user'
       ansible.builtin.import_role:
         name: user
-  ignore_errors: true
-  ignore_unreachable: true
 
 - name: 'Install packages'
   hosts: headplane_servers
@@ -69,9 +67,9 @@
   vars:
     ansible_ssh_private_key_file: "{{ user.ssh_key_path }}/{{ user.ssh_key_file }}"
   tasks:
-    - name: 'Import selfcert role'
+    - name: 'Import root_cert_install role'
       ansible.builtin.import_role:
-        name: selfcert
+        name: root_cert_install
 
 - name: 'Install Node Exporter'
   hosts: headplane_servers

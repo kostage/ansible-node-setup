@@ -8,17 +8,18 @@ keepass_psw: !vault |
           3333643432613833330a613963643732326335363164653962393937376366616661383431653937
           6434
 
-tlsgen_ca_create: false
-tlsgen_ca_common_name: 'Konstantin Doroshenko CA'
-tlsgen_path: '/Users/kostage/Doroshenko/nodes/CA/tmp_cert'
-tlsgen_ca_root_path: '/Users/kostage/Doroshenko/nodes/CA'
-tlsgen_ca_root_key_name: 'ca_root.key'
-tlsgen_ca_root_cert_name: 'ca_root.crt'
-tlsgen_ca_secret_passphrase: "{{ lookup('keepass', 'CA/secret', 'password') }}"
+# Leaf Certificate Configuration
+leaf_cert_ca_create: false
+leaf_cert_ca_common_name: 'Konstantin Doroshenko CA'
+leaf_cert_path: '/Users/kostage/Doroshenko/nodes/CA/tmp_cert'
+leaf_cert_ca_root_path: '/Users/kostage/Doroshenko/nodes/CA'
+leaf_cert_ca_root_key_name: 'ca_root.key'
+leaf_cert_ca_root_cert_name: 'ca_root.crt'
+leaf_cert_ca_secret_passphrase: "{{ lookup('keepass', 'CA/secret', 'password') }}"
 
-tlsgen_remote_path: '/etc/node_tls_cert'
-tlsgen_key_name: 'server.key'
-tlsgen_cert_name: 'server.crt'
+leaf_cert_remote_path: '/etc/node_tls_cert'
+leaf_cert_key_name: 'server.key'
+leaf_cert_cert_name: 'server.crt'
 
 telegram_chat_id: "{{ lookup('keepass', 'telegram_bot/chat_id', 'password') | int }}"
 

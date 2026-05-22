@@ -13,10 +13,11 @@
     update_password: always
 
 - name: Create key folder
-  local_action:
-    module: file
+  ansible.builtin.file:
     path: "{{ user.ssh_key_path }}/"
     state: directory
+  delegate_to: localhost
+  become: false
 
 - name: Copy keys to local machine
   ansible.posix.synchronize:
