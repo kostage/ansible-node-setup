@@ -67,9 +67,7 @@ derp:
     region_name: "Headscale Embedded DERP"
     stun_listen_addr: "0.0.0.0:3478"
     private_key_path: {{ headscale_data_dir }}/derp_server_private.key
-    automatically_add_embedded_derp_region: true
-    ipv4: 1.2.3.4
-    ipv6: 2001:db8::1
+    ipv4: {{ node.ip }}
   urls:
     - https://controlplane.tailscale.com/derpmap/default
   paths: []

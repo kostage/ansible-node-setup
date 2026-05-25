@@ -19,7 +19,7 @@ headscale_metrics_listen_addr: "127.0.0.1:5555"
 headscale_grpc_listen_addr: "127.0.0.1:50443"
 
 # DERP configuration
-headscale_derp_enabled: false
+headscale_derp_enabled: true
 
 # Nginx configuration
 # Extract primary domain for SSL certificate paths

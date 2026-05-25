@@ -5,6 +5,9 @@ ansible_become_password: "{{ lookup('keepass', 'headplane/root', 'password') }}"
 # SSH key paths for different connection stages
 ssh_root_key_path: '/Users/kostage/Doroshenko/nodes/vultrssh'
 
+node:
+  ip: "{{ lookup('keepass', 'headplane/ip', 'password') }}"
+
 user:
   name: "{{ lookup('keepass', 'headplane/user', 'username') }}"
   password: "{{ lookup('keepass', 'headplane/user', 'password') }}"
@@ -20,6 +23,8 @@ firewall_rules:
     port: 80
   - rule: allow
     port: 22
+  - rule: allow
+    port: 3478 # STUN for Headscale Embedded Derp
 
 # Package configuration
 apt_packages:
